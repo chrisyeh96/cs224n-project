@@ -1,0 +1,28 @@
+Project Progress
+================
+
+Stuart Sy <stuartsy@stanford.edu>
+Yushi Homma <yushi@stanford.edu>
+Christopher Yeh <chrisyeh@stanford.edu>
+
+Project: Detecting duplicate questions on a Quora dataset
+
+Baseline
+--------
+So far, we have implemented a baseline algorithm which takes the words of each 
+question and takes the average of their GloVe vector representations to come up
+with a Bag-of-Words representation of the sentence.
+
+We then compared potential duplicates using euclidian, manhattan, and cosine 
+distances between these word vector averages and used a simple Linear Regression 
+model to determine a cosine distance threshold for duplicate questions. We found
+that cosine distance gave the best results.
+
+We used an 80/20 training/testing split on our dataset, and this baseline model
+resulted in ~63% accuracy.
+
+Model Exploration
+-----------------
+We have begun to adapt some of the code framework provided to us in previous
+assignments (classes, helper functions), and are in the process of setting up
+and testing a basic RNN.

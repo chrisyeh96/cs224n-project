@@ -1,3 +1,17 @@
+# Latex compilation temp files
+*.fdb_latexmk
+*.synctex
+*.synctex(busy)
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+*.dvi
+*.aux
+*.log
+*.fls
+*.out
+
+# download data files separately (too big for git)
 data/
 
 # Byte-compiled / optimized / DLL files

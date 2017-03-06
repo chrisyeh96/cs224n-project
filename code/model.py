@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 class Model(object):
     """Abstracts a Tensorflow graph for a learning task.
 

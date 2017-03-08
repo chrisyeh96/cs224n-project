@@ -73,7 +73,9 @@ class ModelHelper(object):
         self.max_length = max_length
 
     def vectorize_example(self, sentence, labels=None):
+        print "VECTORIZING %s" % sentence
         sentence_ = [[self.tok2id.get(normalize(word), self.tok2id[UNK]), self.tok2id[P_CASE + casing(word)]] for word in sentence]
+        print "OUTPUT: " % sentence_
         if labels:
             labels_ = [LBLS.index(l) for l in labels]
             return sentence_, labels_

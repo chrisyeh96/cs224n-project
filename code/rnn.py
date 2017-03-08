@@ -152,7 +152,9 @@ class RNNModel(NERModel):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        self.input_placeholder = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
+        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
+        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
+
         self.labels_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32)
@@ -182,8 +184,14 @@ class RNNModel(NERModel):
         """
         ### YOUR CODE (~6-10 lines)
         feed_dict = {}
-        if inputs_batch is not None:
-            feed_dict[self.input_placeholder] = inputs_batch
+
+        
+        
+        if inputs_batch1 is not None:
+            feed_dict[self.input_placeholder1] = inputs_batch1
+        if inputs_batch2 is not None:
+            feed_dict[self.input_placeholder1] = inputs_batch2
+
         if mask_batch is not None:
             feed_dict[self.mask_placeholder] = mask_batch
         if labels_batch is not None:
@@ -214,13 +222,16 @@ class RNNModel(NERModel):
             embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        embeddings = tf.Variable(self.pretrained_embeddings)
+        embeddings1 = tf.Variable(self.pretrained_embeddings)
+        embeddings2 = tf.Variable(self.pretrained_embeddings)
         # look up values of input indeces from pretrained embeddings
-        embeddings = tf.nn.embedding_lookup(embeddings, self.input_placeholder)
+        embeddings1 = tf.nn.embedding_lookup(embeddings1, self.input_placeholder1)
+        embeddings2 = tf.nn.embedding_lookup(embeddings2, self.input_placeholder2)
         # reshape the embeddings
-        embeddings = tf.reshape(embeddings, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
+        embeddings1 = tf.reshape(embeddings1, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
+        embeddings2 = tf.reshape(embeddings2, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
         ### END YOUR CODE
-        return embeddings
+        return embeddings1, embeddings2
 
     def add_prediction_op(self):
         """Adds the unrolled RNN:
@@ -262,16 +273,16 @@ class RNNModel(NERModel):
             pred: tf.Tensor of shape (batch_size, max_length, n_classes)
         """
 
-        x = self.add_embedding()
+        x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
-        preds = [] # Predicted output at each timestep should go here!
+        pred = 0 # Predicted total output
 
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
-        if self.config.cell == "rnn":
-            cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
+        # if self.config.cell == "rnn":
+        cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
         # elif self.config.cell == "gru":
         #     cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
         else:
@@ -283,8 +294,10 @@ class RNNModel(NERModel):
         U = tf.get_variable("U", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
         b_2 = tf.get_variable("b_2", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
-        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
+        h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
+        h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
         ### END YOUR CODE
+        o1_t, o2_t = 0, 0
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.max_length):
@@ -292,23 +305,18 @@ class RNNModel(NERModel):
                 if time_step > 0:
                     scope.reuse_variables()
 
-                o_t, h_t = cell(x[:, time_step, :], tf.pack(h), scope)
+                o1_t, h1_t = cell(x1[:, time_step, :], tf.pack(h1), scope)
+                o2_t, h2_t = cell(x2[:, time_step, :], tf.pack(h2), scope)
                 # h[time_step] = h_t
-                h = h_t
-                o_drop_t = tf.nn.dropout(o_t, dropout_rate)
-                y_t = tf.matmul(o_drop_t, U) + b_2
-
-                preds.append(y_t)
+                h1 = h1_t
+                h2 = h2_t
                 ### END YOUR CODE
 
         # Make sure to reshape @preds here.
-        ### YOUR CODE HERE (~2-4 lines)
-        preds = tf.pack(preds)
-        # preds = tf.reshape(preds, (-1, self.max_length, self.config.n_classes))
-        preds = tf.transpose(preds, perm=[1, 0, 2])
+        ### YOUR CODE HERE (~2-4 lines) 
+        pred = tf.transpose(pred, perm=[1, 0, 2])
         ### END YOUR CODE
 
-        assert preds.get_shape().as_list() == [None, self.max_length, self.config.n_classes], "predictions are not of the right shape. Expected {}, got {}".format([None, self.max_length, self.config.n_classes], preds.get_shape().as_list())
         return preds
 
     def add_loss_op(self, preds):

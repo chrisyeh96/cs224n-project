@@ -1,4 +1,3 @@
-
 import numpy as np
 
 DEFAULT_FILE_PATH = "../data/glove/glove.6B.200d.txt"

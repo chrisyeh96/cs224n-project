@@ -18,4 +18,5 @@ loss:
 
 look up how to use built in tensorflow ones
 
-mispellings - try it?
+mispellings - try it as extension
+			- found a Python spell-check library PyEnchant https://pythonhosted.org/pyenchant/

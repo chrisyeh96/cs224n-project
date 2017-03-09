@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 import sys, os, pickle
 from glove import loadWordVectors
+from similarity_model import SimilarityModel
+import time
 
 TRAIN_DATA_PATH = "../data/quora/train.tsv"
 TEST_DATA_PATH = "../data/quora/test.tsv"
@@ -118,6 +120,11 @@ if __name__ == "__main__":
 	config.embed_size = embeddings.shape[1]
 
 	print config.embed_size
+
+	print "Building model..."
+	start = time.time()
+	model = SimilarityModel(helper, config, embeddings)
+	print "took %.2f seconds" % (time.time() - start)
 
 	# with tf.Graph().as_default():
 	#     logger.info("Building model...",)

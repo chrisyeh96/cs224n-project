@@ -1,0 +1,21 @@
+padding:
+fixed length - pad and truncate (easy version)
+separate buckets - up to length 10, 20, 30, ...
+	feed in batch of specific length
+
+inputs batch 1, inputs batch 2 in create feed dict
+
+LSTM, conv, rnn
+	pad on both sides (conv) - make sure padding is not a word in vocab
+	lstm - pad on one side
+	dynamic rnn - sequences and length of sequences (lstms)
+
+no need to mask
+
+loss:
+	output 2 scores
+	output 1 score and do sigmoid (CE loss)
+
+look up how to use built in tensorflow ones
+
+mispellings - try it?

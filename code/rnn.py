@@ -276,7 +276,7 @@ class RNNModel(NERModel):
         x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
-        pred = 0 # Predicted total output
+        preds = 0 # Predicted total output
 
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
@@ -314,7 +314,8 @@ class RNNModel(NERModel):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        pred = tf.transpose(pred, perm=[1, 0, 2])
+        preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1))
+        # preds = tf.transpose(preds)
         ### END YOUR CODE
 
         return preds
@@ -335,7 +336,7 @@ class RNNModel(NERModel):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.reduce_mean(tf.boolean_mask(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder), self.mask_placeholder))
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss
 

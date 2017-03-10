@@ -118,7 +118,7 @@ def pad_sequences(data, max_length):
         ### END YOUR CODE ###
     return ret
 
-class RNNModel(NERModel):
+class RNNModel(SimilarityModel):
     """
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
@@ -152,15 +152,15 @@ class RNNModel(NERModel):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
-        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
+        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.max_length))
+        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.max_length))
 
         self.labels_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
-    def create_feed_dict(self, inputs_batch, mask_batch, labels_batch=None, dropout=1):
+    def create_feed_dict(self, inputs_batch1, inputs_batch2, mask_batch, labels_batch=None, dropout=1):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -222,11 +222,10 @@ class RNNModel(NERModel):
             embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        embeddings1 = tf.Variable(self.pretrained_embeddings)
-        embeddings2 = tf.Variable(self.pretrained_embeddings)
+        embeddings = tf.Variable(self.pretrained_embeddings)
         # look up values of input indeces from pretrained embeddings
-        embeddings1 = tf.nn.embedding_lookup(embeddings1, self.input_placeholder1)
-        embeddings2 = tf.nn.embedding_lookup(embeddings2, self.input_placeholder2)
+        embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
+        embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
         # reshape the embeddings
         embeddings1 = tf.reshape(embeddings1, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
         embeddings2 = tf.reshape(embeddings2, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
@@ -394,14 +393,14 @@ class RNNModel(NERModel):
             ret.append([sentence, labels, labels_])
         return ret
 
-    def predict_on_batch(self, sess, inputs_batch, mask_batch):
-        feed = self.create_feed_dict(inputs_batch=inputs_batch, mask_batch=mask_batch)
+    def predict_on_batch(self, sess, inputs_batch1, inputs_batch2, mask_batch):
+        feed = self.create_feed_dict(inputs_batch1=inputs_batch1, inputs_batch2=inputs_batch2, mask_batch=mask_batch)
         predictions = sess.run(tf.argmax(self.pred, axis=2), feed_dict=feed)
         return predictions
 
-    def train_on_batch(self, sess, inputs_batch, labels_batch, mask_batch):
-        feed = self.create_feed_dict(inputs_batch, labels_batch=labels_batch, mask_batch=mask_batch,
-                                     dropout=Config.dropout)
+    def train_on_batch(self, sess, inputs_batch1, inputs_batch2, labels_batch, mask_batch):
+        feed = self.create_feed_dict(inputs_batch1=inputs_batch1, inputs_batch2=inputs_batch2,
+                    labels_batch=labels_batch, mask_batch=mask_batch, dropout=Config.dropout)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
@@ -412,7 +411,8 @@ class RNNModel(NERModel):
         self.pretrained_embeddings = pretrained_embeddings
 
         # Defining placeholders.
-        self.input_placeholder = None
+        self.input_placeholder1 = None
+        self.input_placeholder2 = None
         self.labels_placeholder = None
         self.mask_placeholder = None
         self.dropout_placeholder = None

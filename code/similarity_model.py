@@ -42,7 +42,7 @@ class SimilarityModel(Model):
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
-    def create_feed_dict(self, inputs_batch, mask_batch, labels_batch=None, dropout=1):
+    def create_feed_dict(self, inputs_batch1, inputs_batch2, mask_batch, labels_batch=None, dropout=1):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -69,8 +69,8 @@ class SimilarityModel(Model):
 
         
         
-        feed_dict[self.input_placeholder1] = [input_sents[0] for input_sents in inputs_batch]
-        feed_dict[self.input_placeholder2] = [input_sents[1] for input_sents in inputs_batch]
+        feed_dict[self.input_placeholder1] = inputs_batch1
+        feed_dict[self.input_placeholder2] = inputs_batch2
 
         if mask_batch is not None:
             feed_dict[self.mask_placeholder] = mask_batch
@@ -149,20 +149,28 @@ class SimilarityModel(Model):
             The keep probability should be set to the value of self.dropout_placeholder
 
         Returns:
-            pred: tf.Tensor of shape (batch_size, n_classes)
+            pred: tf.Tensor of shape (batch_size, max_length, n_classes)
         """
 
         x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
-        preds = tf.zeros((self.config.batch_size, self.config.n_classes), tf.float32) # Predicted total output
+        preds = 0 # Predicted total output
 
-
+        # Use the cell defined below. For Q2, we will just be using the
+        # RNNCell you defined, but for Q3, we will run this code again
+        # with a GRU cell!
+        # if self.config.cell == "rnn":
         cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
-
+        # elif self.config.cell == "gru":
+        #     cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
+        else:
+            raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
-        U = tf.get_variable("U", (2 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+        # Initialize state as vector of zeros.
+        ### YOUR CODE HERE (~4-6 lines)
+        U = tf.get_variable("U", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
         b_2 = tf.get_variable("b_2", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
@@ -172,19 +180,22 @@ class SimilarityModel(Model):
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.max_length):
-
+                ### YOUR CODE HERE (~6-10 lines)
                 if time_step > 0:
                     scope.reuse_variables()
 
                 o1_t, h1_t = cell(x1[:, time_step, :], tf.pack(h1), scope)
                 o2_t, h2_t = cell(x2[:, time_step, :], tf.pack(h2), scope)
-
+                # h[time_step] = h_t
                 h1 = h1_t
                 h2 = h2_t
+                ### END YOUR CODE
 
-
-        # IMPLEMENT CALCULATION OF PREDICTION BASED ON TWO HIDDEN VECTORS
-        preds = tf.reduce_sum(tf.mul(x,y), axis=1)
+        # Make sure to reshape @preds here.
+        ### YOUR CODE HERE (~2-4 lines) 
+        preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1))
+        # preds = tf.transpose(preds)
+        ### END YOUR CODE
 
         return preds
 
@@ -198,7 +209,7 @@ class SimilarityModel(Model):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.reduce_mean(tf.boolean_mask(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder), self.mask_placeholder))
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss
 

@@ -3,9 +3,10 @@ from model import Model
 from rnn_cell import RNNCell
 
 class SimilarityModel(Model):
-    def __init__(self, helper, config, report=None):
+    def __init__(self, helper, config, embeddings, report=None):
         self.helper = helper
         self.config = config
+        self.pretrained_embeddings = embeddings
         self.report = report
 
     def add_placeholders(self):

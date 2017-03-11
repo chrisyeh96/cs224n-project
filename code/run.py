@@ -139,10 +139,13 @@ if __name__ == "__main__":
     config.embed_size = embeddings.shape[1]
     print config.embed_size
 
+    # append unknown word and padding word vectors
+
     print "Building model..."
     start = time.time()
     model = SimilarityModel(helper, config, embeddings)
     print "took %.2f seconds" % (time.time() - start)
+
 
     # with tf.Graph().as_default():
     #     logger.info("Building model...",)

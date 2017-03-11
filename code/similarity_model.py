@@ -300,9 +300,10 @@ class SimilarityModel(Model):
         # split up inputs into inputs 1 and inputs 2
         print("Train on batch:")
         print("inputs_batch", inputs_batch)
+        print("inputs_batch[0]", inputs_batch[0])
         print("labels_batch", labels_batch)
 
-    def run_epoch(self, train_examples, dev_set, train_examples_raw, dev_set_raw):
+    def run_epoch(self, sess, train_examples, dev_set, train_examples_raw, dev_set_raw):
         prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
         
         for i, batch in enumerate(minibatches(train_examples, self.config.batch_size)):

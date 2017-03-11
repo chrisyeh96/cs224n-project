@@ -58,7 +58,7 @@ def read_datafile(fstream):
         elif line_num % 3 == 1:
             sentence2 = line.split("\t")
         else:
-            label = bool(line)
+            label = int(line)
             examples.append(([sentence1, sentence2], label))
 
     return examples
@@ -145,24 +145,25 @@ if __name__ == "__main__":
     # append unknown word and padding word vectors
     helper.add_additional_embeddings(embeddings)
 
-    print "Building model..."
-    start = time.time()
-    model = SimilarityModel(helper, config, embeddings)
-    print "took %.2f seconds" % (time.time() - start)
 
 
-    # with tf.Graph().as_default():
+
+    with tf.Graph(    ).as_default():
     #     logger.info("Building model...",)
     #     start = time.time()
     #     model = RNNModel(helper, config, embeddings)
     #     logger.info("took %.2f seconds", time.time() - start)
+        print "Building model..."
+        start = time.time()
+        model = SimilarityModel(helper, config, embeddings)
+        print "took %.2f seconds" % (time.time() - start)
 
-    #     init = tf.global_variables_initializer()
-    #     saver = None
+        init = tf.global_variables_initializer()
+        saver = None
 
-    #     with tf.Session() as session:
-    #         session.run(init)
-    #         model.fit(session, saver, train, dev)
+        with tf.Session() as session:
+            session.run(init)
+            model.fit(session, saver, train, dev)
 
     # logger.info("Model did not crash!")
     # logger.info("Passed!")

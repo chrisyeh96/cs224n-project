@@ -163,9 +163,9 @@ class SimilarityModel(Model):
         # if self.config.cell == "rnn":
         cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
         # elif self.config.cell == "gru":
-        #     cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
-        else:
-            raise ValueError("Unsuppported cell type: " + self.config.cell)
+            # cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
+        # else:
+            # raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
         # Initialize state as vector of zeros.

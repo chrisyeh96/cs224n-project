@@ -14,6 +14,7 @@ TRAIN_DATA_PATH = "../data/quora/train.tsv"
 TEST_DATA_PATH = "../data/quora/test.tsv"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.200d.npy"
 TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.200d.pkl"
+MAX_LENGTH_PATH = "./dependencies/features.pkl"
 
 class Config:
     """Holds model hyperparams and data information.
@@ -69,7 +70,7 @@ def read_datafile(fstream):
 
     return examples
 
-def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_index_path):
+def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_index_path, max_length_path):
     """
     Reads the training and dev data sets from the given paths.
     TODO: should we have train/validation/test split instead of just train/dev?
@@ -86,7 +87,7 @@ def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_ind
     # now process all the input data.
     # turn words into the glove indices
     print "Converting words into glove vector indices..."
-    helper = ModelHelper.load(tokens_to_glove_index_path)
+    helper = ModelHelper.load(tokens_to_glove_index_path, max_length_path)
     train_data = helper.vectorize(train)
     dev_data = helper.vectorize(dev)
 
@@ -96,14 +97,14 @@ class ModelHelper(object):
     """
     This helper takes care of preprocessing data, constructing embeddings, etc.
     """
-    def __init__(self, tok2id):
+    def __init__(self, tok2id, max_length):
         self.tok2id = tok2id
         self.UNKNOWN_WORD_INDEX = len(tok2id)
-
+        self.PADDING_WORD_INDEX = len(tok2id) + 1
         # TODO: If we can have different amounts of padding for training vs. testing data,
         # then we can just compute the max_length in the vectorize functions.
         # Otherwise, we should load in max_length from some saved PKL file
-        self.max_length = None
+        self.max_length = max_length
 
     def vectorize_sentences(self, sentences):
         sentence1 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[0]]
@@ -114,18 +115,20 @@ class ModelHelper(object):
         return [(self.vectorize_sentences(sentences), labels) for sentences, labels in data]
 
     @classmethod
-    def load(cls, tokens_to_glove_index_path):
+    def load(cls, tokens_to_glove_index_path, max_length_path):
         # Make sure the directory exists.
         assert os.path.exists(tokens_to_glove_index_path)
         with open(tokens_to_glove_index_path, 'rb') as f:
             tok2id = pickle.load(f)
-        return cls(tok2id)
+        with open(max_length_path, 'rb') as f:
+            _, max_length = pickle.load(f)
+        return cls(tok2id, max_length)
 
 
 if __name__ == "__main__":
     print "Preparing data..."
     config = Config()
-    helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH)
+    helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)
     print train_raw[0]
     print dev_raw[0]
     print train[0]

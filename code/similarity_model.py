@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell

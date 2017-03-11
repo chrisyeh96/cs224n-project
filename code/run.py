@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import tensorflow as tf
 import numpy as np
 import sys, os, time, pickle
@@ -68,17 +70,17 @@ def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_ind
     Reads the training and dev data sets from the given paths.
     TODO: should we have train/validation/test split instead of just train/dev?
     """
-    print "Loading training data..."
+    print("Loading training data...")
     with open(train_file_path) as train_file:
         train = read_datafile(train_file)
-    print "Done. Read %d sentences" % len(train)
-    print "Loading dev data..."
+    print("Done. Read %d sentences" % len(train))
+    print("Loading dev data...")
     with open(dev_file_path) as dev_file:
         dev = read_datafile(dev_file)
-    print "Done. Read %d sentences"% len(dev)
+    print("Done. Read %d sentences"% len(dev))
 
     # now process all the input data: turn words into the glove indices
-    print "Converting words into glove vector indices..."
+    print("Converting words into glove vector indices...")
     helper = ModelHelper.load(tokens_to_glove_index_path, max_length_path)
     train_data = helper.vectorize(train)
     dev_data = helper.vectorize(dev)
@@ -151,18 +153,18 @@ class ModelHelper(object):
 
 
 if __name__ == "__main__":
-    print "Preparing data..."
+    print("Preparing data...")
     config = Config()
     helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)
-    print train_raw[0]
-    print dev_raw[0]
-    print train[0]
-    print dev[0]
+    print(train_raw[0])
+    print(dev_raw[0])
+    print(train[0])
+    print(dev[0])
     
-    print "Load embeddings..."
+    print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
     config.embed_size = embeddings.shape[1]
-    print config.embed_size
+    print(config.embed_size)
 
     # append unknown word and padding word vectors
     helper.add_additional_embeddings(embeddings)
@@ -175,10 +177,10 @@ if __name__ == "__main__":
     #     start = time.time()
     #     model = RNNModel(helper, config, embeddings)
     #     logger.info("took %.2f seconds", time.time() - start)
-        print "Building model..."
+        print("Building model...")
         start = time.time()
         model = SimilarityModel(helper, config, embeddings)
-        print "took %.2f seconds" % (time.time() - start)
+        print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()
         saver = None

@@ -106,6 +106,10 @@ class ModelHelper(object):
         # Otherwise, we should load in max_length from some saved PKL file
         self.max_length = max_length
 
+    # add additional embeddings for unknown word and padding word 
+    def add_additional_embeddings(self, embeddings, embed_size):
+        self.add_additional_embeddings = [np.mean(embeddings[:100, :], axis=0), np.zeros(embed_size)]
+
     def vectorize_sentences(self, sentences):
         sentence1 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[0]]
         sentence2 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[1]]

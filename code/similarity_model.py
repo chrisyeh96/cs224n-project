@@ -105,8 +105,8 @@ class SimilarityModel(Model):
         ### YOUR CODE HERE (~4-6 lines)
         embeddings = tf.Variable(self.pretrained_embeddings)
         # look up values of input indeces from pretrained embeddings
-        embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
-        embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
+        embeddings1 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder1)
+        embeddings2 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder2)
         # reshape the embeddings
         embeddings1 = tf.reshape(embeddings1, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
         embeddings2 = tf.reshape(embeddings2, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 

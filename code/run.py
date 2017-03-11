@@ -143,6 +143,8 @@ if __name__ == "__main__":
     config.embed_size = embeddings.shape[1]
     print config.embed_size
 
+    helper.add_additional_embeddings(embeddings, config.embed_size)
+
     # append unknown word and padding word vectors
 
     print "Building model..."

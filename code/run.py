@@ -59,7 +59,7 @@ def read_datafile(fstream):
             sentence2 = line.split("\t")
         else:
             label = int(line)
-            examples.append(([sentence1, sentence2], label))
+            examples.append((sentence1, sentence2, label))
 
     return examples
 
@@ -109,13 +109,35 @@ class ModelHelper(object):
         padding_word_vector = np.zeros(embeddings.shape[1])
         self.additional_embeddings = np.stack([unknown_word_vector, padding_word_vector])
 
-    def vectorize_sentences(self, sentences):
-        sentence1 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[0]]
-        sentence2 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[1]]
-        return [sentence1, sentence2]
+    def pad_or_truncate_sentence(self, sentence):
+        """Ensures @sentence is of length self.max_length by padding it with
+        self.PADDING_WORD_INDEX at the beginning of the sentence or by truncating the
+        rest of the sentence.
+
+        Args:
+            sentence: a list of integers representing word indices
+        Returns:
+            an integer numpy array of length self.max_length representing the sentence
+        """
+        new_sentence = np.zeros(self.max_length, dtype=np.int32)
+        initial_length = len(sentence)
+        if initial_length < self.max_length:
+            num_padding = self.max_length - initial_length
+            new_sentence = [self.PADDING_WORD_INDEX]*num_padding + sentence
+        elif initial_length >= self.max_length:
+            new_sentence = sentence[0:self.max_length]
+        return new_sentence
+
+    def vectorize_example(self, example):
+        s1, s2, label = example
+        s1_vectorized = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in s1]
+        s2_vectorized = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in s2]
+        s1_vectorized = self.pad_or_truncate_sentence(s1_vectorized)
+        s2_vectorized = self.pad_or_truncate_sentence(s2_vectorized)
+        return (s1_vectorized, s2_vectorized, label)
 
     def vectorize(self, data):
-        return [(self.vectorize_sentences(sentences), labels) for sentences, labels in data]
+        return [self.vectorize_example(example) for example in data]
 
     @classmethod
     def load(cls, tokens_to_glove_index_path, max_length_path):

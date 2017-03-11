@@ -3,41 +3,6 @@ from model import Model
 from rnn_cell import RNNCell
 from util import Progbar, minibatches
 
-def pad_sequences(data, max_length, padding_word_index):
-    """Ensures each sentence in @data is of length @max_length by padding it with
-    @padding_word_index at the beginning of the sentence or by truncating the rest
-    of the sequence.
-
-    Args:
-        data: is a list of ([sentence1, sentence2], label) tuples.
-            - sentence1, sentence2 are lists of integer indices representing words
-            - label is a boolean
-        max_length: the desired length for all sentences
-    Returns:
-        a new list of data points of the structure ([sentence1', sentence2'], label)
-        where each of sentence1' and sentence2' are of length @max_length.
-    """
-    ret = []
-
-    # Use this zero vector when padding sequences.
-    for sentences, label in data:
-        ### YOUR CODE HERE (~4-6 lines)
-        new_sentences = np.zeros((2, max_length), dtype=np.int32)
-
-        for i in [0,1]:
-            sentence = sentences[i]
-            initial_length = len(sentence)
-            if initial_length < max_length:
-                num_padding = max_length - initial_length
-                new_sentences[i] = [padding_word_index]*num_padding + sentence
-            elif initial_length >= max_length:
-                new_sentences[i] = sentence[0:max_length]
-
-        ret.append((new_sentences, label))
-        ### END YOUR CODE ###
-    return ret
-
-
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
         self.helper = helper
@@ -290,7 +255,7 @@ class SimilarityModel(Model):
         print("")
 
     def preprocess_sequence_data(self, examples):
-        return pad_sequences(examples, self.helper.max_length, self.helper.PADDING_WORD_INDEX)
+        return zip(*examples)
 
 
     def fit(self, sess, saver, train_examples_raw, dev_set_raw):

@@ -5,6 +5,7 @@ from model import Model
 from rnn_cell import RNNCell
 from util import Progbar, minibatches
 import numpy as np
+import pdb
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
@@ -72,8 +73,6 @@ class SimilarityModel(Model):
         ### YOUR CODE (~6-10 lines)
         feed_dict = {}
 
-        
-        
         feed_dict[self.input_placeholder1] = inputs_batch1
         feed_dict[self.input_placeholder2] = inputs_batch2
 
@@ -156,7 +155,6 @@ class SimilarityModel(Model):
         Returns:
             pred: tf.Tensor of shape (batch_size, max_length, n_classes)
         """
-
         x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
@@ -248,13 +246,20 @@ class SimilarityModel(Model):
         return predictions    
 
     # outputs predictions after training
-    def output(self, sess, inputs_raw, inputs=None):
-        if inputs is None:
-            inputs = self.preprocess_sequence_data(self.helper.vectorize(inputs_raw))
-
+    def output(self, sess, inputs):
+        """
+        Args:
+            sess: a TFSession
+            examples: [ list of all sentence 1,
+                        list of all sentence 2,
+                        list of all labels ]
+        Returns:
+            TODO
+        """
         preds = []
         prog = Progbar(target=1+int(len(inputs)/ self.config.batch_size))
         for i, batch in enumerate(minibatches(inputs, self.config.batch_size, shuffle=False)):
+            pdb.set_trace()
             # Ignore predict
             batch = batch[:2] + batch[3:]
             preds_ = self.predict_on_batch(sess, *batch)
@@ -263,11 +268,20 @@ class SimilarityModel(Model):
 
         return preds
 
-    def evaluate(self, sess, examples, examples_raw):
+    def evaluate(self, sess, examples):
+        """
+        Args:
+            sess: a TFSession
+            examples: [ list of all sentence 1,
+                        list of all sentence 2,
+                        list of all labels ]
+        Returns:
+            fraction of correct predictions
+        """
         correct_preds, total_preds = 0.0, 0.0
 
-        for i, prediction in enumerate(self.output(sess, examples_raw, examples)):
-            true_label = examples_raw[i][2]
+        for i, prediction in enumerate(self.output(sess, examples)):
+            true_label = examples[2][i]
             if true_label == prediction:
                 correct_preds += 1.0
             total_preds += 1
@@ -284,7 +298,7 @@ class SimilarityModel(Model):
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
-    def run_epoch(self, sess, train_examples, dev_set, train_examples_raw, dev_set_raw):
+    def run_epoch(self, sess, train_examples, dev_set):
         prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
         
         for i, batch in enumerate(minibatches(train_examples, self.config.batch_size)):
@@ -292,7 +306,7 @@ class SimilarityModel(Model):
             prog.update(i+1, [("train loss", loss)])
         print("")
 
-        percentage_correct = self.evaluate(sess, dev_set, dev_set_raw)
+        percentage_correct = self.evaluate(sess, dev_set)
         return percentage_correct
 
     def preprocess_sequence_data(self, examples):
@@ -302,15 +316,14 @@ class SimilarityModel(Model):
     def fit(self, sess, saver, train_examples_raw, dev_set_raw):
         best_score = 0.
 
-        # add padding
+        # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
 
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
-            score = self.run_epoch(sess, train_examples, dev_set, train_examples_raw, dev_set_raw)
+            score = self.run_epoch(sess, train_examples, dev_set)
             if score > best_score:
                 best_score = score
                 print("New best score: %f" % best_score)
         return best_score
-

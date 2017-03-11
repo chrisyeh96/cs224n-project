@@ -1,6 +1,7 @@
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
+from util import Progbar, minibatches
 
 def pad_sequences(data, max_length, padding_word_index):
     """Ensures each input-output seqeunce pair in @data is of length
@@ -294,4 +295,33 @@ class SimilarityModel(Model):
         train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
         ### END YOUR CODE
         return train_op
+
+    def train_on_batch(self, sess, inputs_batch, labels_batch):
+        # split up inputs into inputs 1 and inputs 2
+        print("Train on batch:")
+        print("inputs_batch", inputs_batch)
+        print("labels_batch", labels_batch)
+
+    def run_epoch(self, train_examples, dev_set, train_examples_raw, dev_set_raw):
+        prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
+        
+        for i, batch in enumerate(minibatches(train_examples, self.config.batch_size)):
+            loss = self.train_on_batch(sess, *batch)
+            prog.update(i+1, [("train loss", loss)])
+        print("")
+
+    def preprocess_sequence_data(self, examples):
+        return pad_sequences(examples, self.helper.max_length, self.helper.PADDING_WORD_INDEX)
+
+
+    def fit(self, sess, saver, train_examples_raw, dev_set_raw):
+        best_score = 0.
+
+        # add padding
+        train_examples = self.preprocess_sequence_data(train_examples_raw)
+        dev_set = self.preprocess_sequence_data(dev_set_raw)
+
+        for epoch in range(self.config.n_epochs):
+            print("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
+            score = self.run_epoch(sess, train_examples, dev_set, train_examples_raw, dev_set_raw)
 

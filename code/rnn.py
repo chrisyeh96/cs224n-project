@@ -377,7 +377,7 @@ class RNNModel(SimilarityModel):
             return ret
 
         examples = featurize_windows(examples, self.helper.START, self.helper.END)
-        return pad_sequences(examples, self.max_length)
+        return pad_sequences(examples, self.max_length, self.helper.PADDING_WORD_INDEX)
 
     def consolidate_predictions(self, examples_raw, examples, preds):
         """Batch the predictions into groups of sentence length.

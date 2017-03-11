@@ -2,7 +2,7 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 
-def pad_sequences(data, max_length):
+def pad_sequences(data, max_length, padding_word_index):
     """Ensures each input-output seqeunce pair in @data is of length
     @max_length by padding it with zeros and truncating the rest of the
     sequence.
@@ -40,19 +40,21 @@ def pad_sequences(data, max_length):
     ret = []
 
     # Use this zero vector when padding sequences.
-    zero_vector = [0] * Config.n_features
-
-    for sentence, label in data:
+    for sentences, label in data:
         ### YOUR CODE HERE (~4-6 lines)
-        initial_length = len(sentence)
-        new_sentence = sentence[:]
-        if initial_length < max_length:
-            additional_length = max_length - initial_length
-            new_sentence += [zero_vector for i in range(additional_length)]
-        elif initial_length >= max_length:
-            new_sentence = new_sentence[:max_length]
-            new_labels = new_labels[:max_length]
-        ret.append((new_sentence, new_labels, mask))
+        new_sentences = []
+        for sentence in sentences:
+            initial_length = len(sentences)
+            new_sentence = sentences[:]
+
+            if initial_length < max_length:
+                additional_length = max_length - initial_length
+                new_sentence += [padding_word_index for i in range(additional_length)]
+            elif initial_length >= max_length:
+                new_sentence = new_sentence[:max_length]
+            new_sentence.append(new_sentence)
+
+        ret.append((new_sentences, label))
         ### END YOUR CODE ###
     return ret
 

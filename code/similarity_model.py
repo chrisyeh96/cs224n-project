@@ -4,56 +4,34 @@ from rnn_cell import RNNCell
 from util import Progbar, minibatches
 
 def pad_sequences(data, max_length, padding_word_index):
-    """Ensures each input-output seqeunce pair in @data is of length
-    @max_length by padding it with zeros and truncating the rest of the
-    sequence.
-
-    TODO: In the code below, for every sentence, labels pair in @data,
-    (a) create a new sentence which appends zero feature vectors until
-    the sentence is of length @max_length. If the sentence is longer
-    than @max_length, simply truncate the sentence to be @max_length
-    long.
-    (b) create a new label sequence similarly.
-    (c) create a _masking_ sequence that has a True wherever there was a
-    token in the original sequence, and a False for every padded input.
-
-    Example: for the (sentence, labels) pair: [[4,1], [6,0], [7,0]], [1,
-    0, 0], and max_length = 5, we would construct
-        - a new sentence: [[4,1], [6,0], [7,0], [0,0], [0,0]]
-        - a new label seqeunce: [1, 0, 0, 4, 4], and
-        - a masking seqeunce: [True, True, True, False, False].
+    """Ensures each sentence in @data is of length @max_length by padding it with
+    @padding_word_index at the beginning of the sentence or by truncating the rest
+    of the sequence.
 
     Args:
-        data: is a list of (sentence, labels) tuples. @sentence is a list
-            containing the words in the sentence and @label is a list of
-            output labels. Each word is itself a list of
-            @n_features features. For example, the sentence "Chris
-            Manning is amazing" and labels "PER PER O O" would become
-            ([[1,9], [2,9], [3,8], [4,8]], [1, 1, 4, 4]). Here "Chris"
-            the word has been featurized as "[1, 9]", and "[1, 1, 4, 4]"
-            is the list of labels. 
-        max_length: the desired length for all input/output sequences.
+        data: is a list of ([sentence1, sentence2], label) tuples.
+            - sentence1, sentence2 are lists of integer indices representing words
+            - label is a boolean
+        max_length: the desired length for all sentences
     Returns:
-        a new list of data points of the structure (sentence', labels', mask).
-        Each of sentence', labels' and mask are of length @max_length.
-        See the example above for more details.
+        a new list of data points of the structure ([sentence1', sentence2'], label)
+        where each of sentence1' and sentence2' are of length @max_length.
     """
     ret = []
 
     # Use this zero vector when padding sequences.
     for sentences, label in data:
         ### YOUR CODE HERE (~4-6 lines)
-        new_sentences = []
-        for sentence in sentences:
-            initial_length = len(sentences)
-            new_sentence = sentences[:]
+        new_sentences = np.zeros((2, max_length), dtype=np.int32)
 
+        for i in [0,1]:
+            sentence = sentences[i]
+            initial_length = len(sentence)
             if initial_length < max_length:
-                additional_length = max_length - initial_length
-                new_sentence += [padding_word_index for i in range(additional_length)]
+                num_padding = max_length - initial_length
+                new_sentences[i] = [padding_word_index]*num_padding + sentence
             elif initial_length >= max_length:
-                new_sentence = new_sentence[:max_length]
-            new_sentence.append(new_sentence)
+                new_sentences[i] = sentence[0:max_length]
 
         ret.append((new_sentences, label))
         ### END YOUR CODE ###

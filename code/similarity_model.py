@@ -3,6 +3,7 @@ from model import Model
 from rnn_cell import RNNCell
 from util import Progbar, minibatches
 import numpy as np
+import pdb
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
@@ -10,6 +11,11 @@ class SimilarityModel(Model):
         self.config = config
         self.pretrained_embeddings = embeddings
         self.report = report
+
+        self.input_placeholder1 = None
+        self.input_placeholder2 = None
+        self.labels_placeholder = None
+        self.dropout_placeholder = None
 
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
@@ -41,7 +47,6 @@ class SimilarityModel(Model):
         self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
 
         self.labels_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
-        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
@@ -252,7 +257,8 @@ class SimilarityModel(Model):
 
         preds = []
         prog = Progbar(target=1+int(len(inputs)/ self.config.batch_size))
-        for i, batch in enumerate(minibatches(inputs, self.config.batch_size, shuffle=False)):
+        for i, batch in enumerate(self.stupid_minibatch(inputs, self.config.batch_size)):
+            # pdb.set_trace()
             # Ignore predict
             batch = batch[:2] + batch[3:]
             preds_ = self.predict_on_batch(sess, *batch)
@@ -264,7 +270,10 @@ class SimilarityModel(Model):
     def evaluate(self, sess, examples, examples_raw):
         correct_preds, total_preds = 0.0, 0.0
 
-        for i, prediction in enumerate(self.output(sess, examples_raw, examples)):
+        preds = self.output(sess, examples_raw, examples)
+        print("prediction length: %d" % len(preds))
+
+        for i, prediction in enumerate(preds):
             true_label = examples_raw[i][2]
             if true_label == prediction:
                 correct_preds += 1.0
@@ -274,18 +283,24 @@ class SimilarityModel(Model):
 
     def train_on_batch(self, sess, inputs_batch1, inputs_batch2, labels_batch):
         # split up inputs into inputs 1 and inputs 2
-        print("Train on batch:")
-        print("inputs_batch", inputs_batch)
-        print("inputs_batch[0]", inputs_batch[0])
-        print("labels_batch", labels_batch)
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2, labels_batch, dropout=self.config.dropout)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
+    def stupid_minibatch(self, train_examples, batch_size):
+        minibatches = []
+        sent1, sent2, labels = train_examples
+        for i in range(int(np.ceil(len(sent1) / batch_size))):
+            start = i * batch_size
+            end = min([i * batch_size + batch_size, len(train_examples)])
+            minibatches.append((sent1[start:end], sent2[start:end], labels[start:end]))
+
+        return minibatches
+
     def run_epoch(self, sess, train_examples, dev_set, train_examples_raw, dev_set_raw):
         prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
         
-        for i, batch in enumerate(minibatches(train_examples, self.config.batch_size)):
+        for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
             loss = self.train_on_batch(sess, *batch)
             prog.update(i+1, [("train loss", loss)])
         print("")

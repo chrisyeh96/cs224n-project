@@ -281,7 +281,6 @@ class SimilarityModel(Model):
         """
         correct_preds, total_preds = 0.0, 0.0
 
-
         preds = self.output(sess, examples_raw, examples)
         print("prediction length: %d" % len(preds))
 
@@ -301,14 +300,12 @@ class SimilarityModel(Model):
         return loss
 
     def stupid_minibatch(self, train_examples, batch_size):
-        minibatches = []
         sent1, sent2, labels = train_examples
-        for i in range(int(np.ceil(len(sent1) / batch_size))):
+        num_examples = len(sent1)
+        for i in range(int(np.ceil(num_examples / batch_size))):
             start = i * batch_size
-            end = min([i * batch_size + batch_size, len(train_examples)])
-            minibatches.append((sent1[start:end], sent2[start:end], labels[start:end]))
-
-        return minibatches
+            end = min(i * batch_size + batch_size, num_examples)
+            yield (sent1[start:end], sent2[start:end], labels[start:end])
 
     def run_epoch(self, sess, train_examples, dev_set):
         prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
@@ -323,7 +320,6 @@ class SimilarityModel(Model):
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)
-
 
     def fit(self, sess, saver, train_examples_raw, dev_set_raw):
         best_score = 0.

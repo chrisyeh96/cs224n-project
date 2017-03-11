@@ -52,7 +52,7 @@ class SimilarityModel(Model):
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
-    def create_feed_dict(self, inputs_batch1, inputs_batch2, mask_batch, labels_batch=None, dropout=1):
+    def create_feed_dict(self, inputs_batch1, inputs_batch2, labels_batch=None, dropout=1):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -80,8 +80,6 @@ class SimilarityModel(Model):
         feed_dict[self.input_placeholder1] = inputs_batch1
         feed_dict[self.input_placeholder2] = inputs_batch2
 
-        if mask_batch is not None:
-            feed_dict[self.mask_placeholder] = mask_batch
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
         if dropout is not None:
@@ -262,13 +260,7 @@ class SimilarityModel(Model):
         """
         preds = []
         prog = Progbar(target=1+int(len(inputs)/ self.config.batch_size))
-<<<<<<< HEAD
         for i, batch in enumerate(self.stupid_minibatch(inputs, self.config.batch_size)):
-            # pdb.set_trace()
-=======
-        for i, batch in enumerate(minibatches(inputs, self.config.batch_size, shuffle=False)):
-            pdb.set_trace()
->>>>>>> bbadd98301834b58a0fc15c6817626380e7c9e63
             # Ignore predict
             batch = batch[:2] + batch[3:]
             preds_ = self.predict_on_batch(sess, *batch)

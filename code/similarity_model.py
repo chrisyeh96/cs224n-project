@@ -2,6 +2,7 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 from util import Progbar, minibatches
+import numpy as np
 
 def pad_sequences(data, max_length, padding_word_index):
     """Ensures each sentence in @data is of length @max_length by padding it with

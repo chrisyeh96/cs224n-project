@@ -19,6 +19,8 @@ class SimilarityModel(Model):
         self.labels_placeholder = None
         self.dropout_placeholder = None
 
+        self.build()
+
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
 
@@ -45,10 +47,10 @@ class SimilarityModel(Model):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
-        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.max_length, self.config.n_features))
+        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.helper.max_length, self.config.n_features))
+        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.helper.max_length, self.config.n_features))
 
-        self.labels_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        self.labels_placeholder = tf.placeholder(tf.int32, (None, self.helper.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
@@ -113,8 +115,8 @@ class SimilarityModel(Model):
         embeddings1 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder2)
         # reshape the embeddings
-        embeddings1 = tf.reshape(embeddings1, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
-        embeddings2 = tf.reshape(embeddings2, (-1, self.max_length, self.config.n_features * self.config.embed_size)) 
+        embeddings1 = tf.reshape(embeddings1, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
+        embeddings2 = tf.reshape(embeddings2, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
         ### END YOUR CODE
         return embeddings1, embeddings2
 
@@ -166,7 +168,7 @@ class SimilarityModel(Model):
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
         # if self.config.cell == "rnn":
-        cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
+        cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
         # elif self.config.cell == "gru":
             # cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
         # else:
@@ -184,7 +186,7 @@ class SimilarityModel(Model):
         o1_t, o2_t = 0, 0
 
         with tf.variable_scope("RNN") as scope:
-            for time_step in range(self.max_length):
+            for time_step in range(self.helper.max_length):
                 ### YOUR CODE HERE (~6-10 lines)
                 if time_step > 0:
                     scope.reuse_variables()
@@ -238,9 +240,9 @@ class SimilarityModel(Model):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE (~1-2 lines)
-        train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
+        self.train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
         ### END YOUR CODE
-        return train_op
+        return self.train_op
 
     def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2)

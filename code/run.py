@@ -107,8 +107,8 @@ class ModelHelper(object):
         - 0th row is word vector for unknown word, average of some known words
         - 1st row is word vector for padding word, all zeros
         '''
-        unknown_word_vector = np.mean(embeddings[:100, :], axis=0) # vector for unknown word
-        padding_word_vector = np.zeros(embeddings.shape[1])
+        unknown_word_vector = np.mean(embeddings[:100, :], axis=0, dtype=np.float32) # vector for unknown word
+        padding_word_vector = np.zeros(embeddings.shape[1], dtype=np.float32)
         self.additional_embeddings = np.stack([unknown_word_vector, padding_word_vector])
 
     def pad_or_truncate_sentence(self, sentence):
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
 
 
-    with tf.Graph(    ).as_default():
+    with tf.Graph().as_default():
     #     logger.info("Building model...",)
     #     start = time.time()
     #     model = RNNModel(helper, config, embeddings)

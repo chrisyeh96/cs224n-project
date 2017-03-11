@@ -2,6 +2,61 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 
+def pad_sequences(data, max_length):
+    """Ensures each input-output seqeunce pair in @data is of length
+    @max_length by padding it with zeros and truncating the rest of the
+    sequence.
+
+    TODO: In the code below, for every sentence, labels pair in @data,
+    (a) create a new sentence which appends zero feature vectors until
+    the sentence is of length @max_length. If the sentence is longer
+    than @max_length, simply truncate the sentence to be @max_length
+    long.
+    (b) create a new label sequence similarly.
+    (c) create a _masking_ sequence that has a True wherever there was a
+    token in the original sequence, and a False for every padded input.
+
+    Example: for the (sentence, labels) pair: [[4,1], [6,0], [7,0]], [1,
+    0, 0], and max_length = 5, we would construct
+        - a new sentence: [[4,1], [6,0], [7,0], [0,0], [0,0]]
+        - a new label seqeunce: [1, 0, 0, 4, 4], and
+        - a masking seqeunce: [True, True, True, False, False].
+
+    Args:
+        data: is a list of (sentence, labels) tuples. @sentence is a list
+            containing the words in the sentence and @label is a list of
+            output labels. Each word is itself a list of
+            @n_features features. For example, the sentence "Chris
+            Manning is amazing" and labels "PER PER O O" would become
+            ([[1,9], [2,9], [3,8], [4,8]], [1, 1, 4, 4]). Here "Chris"
+            the word has been featurized as "[1, 9]", and "[1, 1, 4, 4]"
+            is the list of labels. 
+        max_length: the desired length for all input/output sequences.
+    Returns:
+        a new list of data points of the structure (sentence', labels', mask).
+        Each of sentence', labels' and mask are of length @max_length.
+        See the example above for more details.
+    """
+    ret = []
+
+    # Use this zero vector when padding sequences.
+    zero_vector = [0] * Config.n_features
+
+    for sentence, label in data:
+        ### YOUR CODE HERE (~4-6 lines)
+        initial_length = len(sentence)
+        new_sentence = sentence[:]
+        if initial_length < max_length:
+            additional_length = max_length - initial_length
+            new_sentence += [zero_vector for i in range(additional_length)]
+        elif initial_length >= max_length:
+            new_sentence = new_sentence[:max_length]
+            new_labels = new_labels[:max_length]
+        ret.append((new_sentence, new_labels, mask))
+        ### END YOUR CODE ###
+    return ret
+
+
 class SimilarityModel(Model):
     def __init__(self, helper, config, report=None):
         self.helper = helper
@@ -193,7 +248,7 @@ class SimilarityModel(Model):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1))
+        preds = tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1)
         # preds = tf.transpose(preds)
         ### END YOUR CODE
 

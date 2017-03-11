@@ -1,20 +1,13 @@
 import tensorflow as tf
 import numpy as np
-import sys, os
-from glove import loadWordVectors
+import sys, os, time, pickle
 from similarity_model import SimilarityModel
-import time
-
-try:
-   import cPickle as pickle # cPickle is way faster than pickle
-except:
-   import pickle
 
 TRAIN_DATA_PATH = "../data/quora/train.tsv"
 TEST_DATA_PATH = "../data/quora/test.tsv"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.200d.npy"
 TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.200d.pkl"
-MAX_LENGTH_PATH = "./dependencies/features.pkl"
+MAX_LENGTH_PATH = "../data/quora/max_length.pkl"
 
 class Config:
     """Holds model hyperparams and data information.
@@ -84,8 +77,7 @@ def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_ind
         dev = read_datafile(dev_file)
     print "Done. Read %d sentences"% len(dev)
 
-    # now process all the input data.
-    # turn words into the glove indices
+    # now process all the input data: turn words into the glove indices
     print "Converting words into glove vector indices..."
     helper = ModelHelper.load(tokens_to_glove_index_path, max_length_path)
     train_data = helper.vectorize(train)
@@ -107,8 +99,15 @@ class ModelHelper(object):
         self.max_length = max_length
 
     # add additional embeddings for unknown word and padding word 
-    def add_additional_embeddings(self, embeddings, embed_size):
-        self.add_additional_embeddings = [np.mean(embeddings[:100, :], axis=0), np.zeros(embed_size)]
+    def add_additional_embeddings(self, embeddings):
+        '''Creates additional embeddings for unknown words and the padding word
+        Returns a (2, embed_size) numpy array:
+        - 0th row is word vector for unknown word, average of some known words
+        - 1st row is word vector for padding word, all zeros
+        '''
+        unknown_word_vector = np.mean(embeddings[:100, :], axis=0) # vector for unknown word
+        padding_word_vector = np.zeros(embeddings.shape[1])
+        self.additional_embeddings = np.stack([unknown_word_vector, padding_word_vector])
 
     def vectorize_sentences(self, sentences):
         sentence1 = [self.tok2id.get(word, self.UNKNOWN_WORD_INDEX) for word in sentences[0]]
@@ -125,7 +124,7 @@ class ModelHelper(object):
         with open(tokens_to_glove_index_path, 'rb') as f:
             tok2id = pickle.load(f)
         with open(max_length_path, 'rb') as f:
-            _, max_length = pickle.load(f)
+            max_length = pickle.load(f)
         return cls(tok2id, max_length)
 
 
@@ -143,9 +142,8 @@ if __name__ == "__main__":
     config.embed_size = embeddings.shape[1]
     print config.embed_size
 
-    helper.add_additional_embeddings(embeddings, config.embed_size)
-
     # append unknown word and padding word vectors
+    helper.add_additional_embeddings(embeddings)
 
     print "Building model..."
     start = time.time()

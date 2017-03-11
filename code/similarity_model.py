@@ -198,7 +198,7 @@ class SimilarityModel(Model):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        preds = tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1)
+        preds = tf.round(tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1)))
         # preds = tf.transpose(preds)
         ### END YOUR CODE
 
@@ -242,12 +242,47 @@ class SimilarityModel(Model):
         ### END YOUR CODE
         return train_op
 
-    def train_on_batch(self, sess, inputs_batch, labels_batch):
+    def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
+        feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
+        predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
+        return predictions    
+
+    # outputs predictions after training
+    def output(self, sess, inputs_raw, inputs=None):
+        if inputs is None:
+            inputs = self.preprocess_sequence_data(self.helper.vectorize(inputs_raw))
+
+        preds = []
+        prog = Progbar(target=1+int(len(inputs)/ self.config.batch_size))
+        for i, batch in enumerate(minibatches(inputs, self.config.batch_size, shuffle=False)):
+            # Ignore predict
+            batch = batch[:2] + batch[3:]
+            preds_ = self.predict_on_batch(sess, *batch)
+            preds += list(preds_)
+            prog.update(i + 1, [])
+
+        return preds
+
+    def evaluate(self, sess, examples, examples_raw):
+        correct_preds, total_preds = 0.0, 0.0
+
+        for i, prediction in enumerate(self.output(sess, examples_raw, examples)):
+            true_label = examples_raw[i][2]
+            if true_label == prediction:
+                correct_preds += 1.0
+            total_preds += 1
+
+        return correct_preds / total_preds
+
+    def train_on_batch(self, sess, inputs_batch1, inputs_batch2, labels_batch):
         # split up inputs into inputs 1 and inputs 2
         print("Train on batch:")
         print("inputs_batch", inputs_batch)
         print("inputs_batch[0]", inputs_batch[0])
         print("labels_batch", labels_batch)
+        feed = self.create_feed_dict(inputs_batch1, inputs_batch2, labels_batch, dropout=self.config.dropout)
+        _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
+        return loss
 
     def run_epoch(self, sess, train_examples, dev_set, train_examples_raw, dev_set_raw):
         prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
@@ -256,6 +291,9 @@ class SimilarityModel(Model):
             loss = self.train_on_batch(sess, *batch)
             prog.update(i+1, [("train loss", loss)])
         print("")
+
+        percentage_correct = self.evaluate(sess, dev_set, dev_set_raw)
+        return percentage_correct
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)
@@ -271,4 +309,8 @@ class SimilarityModel(Model):
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
             score = self.run_epoch(sess, train_examples, dev_set, train_examples_raw, dev_set_raw)
+            if score > best_score:
+                best_score = score
+                print("New best score: %f" % best_score)
+        return best_score
 

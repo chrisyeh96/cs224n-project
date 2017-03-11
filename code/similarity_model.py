@@ -2,6 +2,7 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 from util import Progbar, minibatches
+import numpy as np
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):

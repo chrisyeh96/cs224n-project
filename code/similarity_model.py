@@ -202,12 +202,12 @@ class SimilarityModel(Model):
             distance = cosine_distance(h1, h2)
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-            preds = tf.sigmoid(tf.sqrt(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)) + self.logistic_b)
-            return preds
+            distance = tf.sqrt(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1))
+            logistic_a = tf.Constant(1.0)
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         
-        preds = tf.sigmoid(self.logistic_a * distance + self.logistic_b)
+        preds = tf.sigmoid(logistic_a * distance + logistic_b)
         return preds
 
     def add_loss_op(self, preds):

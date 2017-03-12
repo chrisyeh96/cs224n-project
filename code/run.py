@@ -29,10 +29,9 @@ class Config:
     max_grad_norm = 10.
     lr = 0.001
 
-    regularization_constant = 0.1
-
     distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
     cell = "rnn" # one of ["rnn", "gru"]
+    regularization_constant = 0.1
 
 def normalize(word):
     """
@@ -163,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch_size", type=int, required=False, help="number of examples for each minibatch")
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef"], help="distance measure")
+    parser.add_argument("-r", "--reg_constant", type=int, required=False, help="regularization constant")
     args = parser.parse_args()
 
     config = Config()
@@ -172,6 +172,8 @@ if __name__ == "__main__":
         config.cell = args.cell
     if args.distance_measure is not None:
         config.distance_measure = args.distance_measure
+    if args.reg_constant is not None:
+        config.regularization_constant = args.reg_constant
 
     print("Preparing data...")
     helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)

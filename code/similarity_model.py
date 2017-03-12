@@ -196,7 +196,7 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
-        self.regularization_factor = logistic_a + logistic_b
+        self.regularization_term = logistic_a + logistic_b
 
         if self.config.distance_measure == "l2":
             distance = norm(h1 - h2 + 0.000001)
@@ -206,7 +206,7 @@ class SimilarityModel(Model):
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
             logistic_a = tf.constant(1.0)
-            self.regularization_factor = tf.reduce_sum(self.coefficients) + logistic_b
+            self.regularization_term = tf.reduce_sum(self.coefficients) + logistic_b
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         

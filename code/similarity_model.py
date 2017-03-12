@@ -252,10 +252,11 @@ class SimilarityModel(Model):
         ### END YOUR CODE
         return self.train_op
 
+    # rounds predictions to 0, 1
     def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
         predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
-        return predictions    
+        return np.round(predictions).astype(int)
 
     # evaluate model after training
     def evaluate(self, sess, examples):

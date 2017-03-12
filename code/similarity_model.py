@@ -270,7 +270,7 @@ class SimilarityModel(Model):
             TODO: maybe return the actual predictions as well
         """
         correct_preds = 0.0
-        num_examples = len(examples)
+        num_examples = len(examples[0])
 
         preds = []
         prog = Progbar(target=1+int(num_examples / self.config.batch_size))

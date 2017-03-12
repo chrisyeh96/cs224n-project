@@ -20,6 +20,12 @@ logger = logging.getLogger("hw3")
 logger.setLevel(logging.DEBUG)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
+def cosine_distance(h1, h2):
+    return tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2)
+
+def norm(self, vector):
+    return tf.sqrt(tf.reduce_sum(tf.square(vector), axis=1))
+
 def read_conll(fstream):
     """
     Reads a input stream @fstream (e.g. output of `open(fname, 'r')`) in CoNLL file format.

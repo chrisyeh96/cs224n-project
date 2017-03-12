@@ -31,9 +31,9 @@ class SimilarityModel(Model):
 
         Adds following nodes to the computational graph
 
-        input_placeholder: Input placeholder tensor of  shape (None, self.max_length, n_features), type tf.int32
+        input_placeholder1: Input placeholder tensor of  shape (None, self.max_length), type tf.int32
+        input_placeholder2: Input placeholder tensor of  shape (None, self.max_length), type tf.int32
         labels_placeholder: Labels placeholder tensor of shape (None, self.max_length), type tf.int32
-        mask_placeholder:  Mask placeholder tensor of shape (None, self.max_length), type tf.bool
         dropout_placeholder: Dropout value placeholder (scalar), type tf.float32
 
         TODO: Add these placeholders to self as the instance variables
@@ -97,9 +97,9 @@ class SimilarityModel(Model):
         TODO:
             - Create an embedding tensor and initialize it with self.pretrained_embeddings.
             - Use the input_placeholder to index into the embeddings tensor, resulting in a
-              tensor of shape (None, max_length, n_features, embed_size).
+              tensor of shape (None, max_length, embed_size).
             - Concatenates the embeddings by reshaping the embeddings tensor to shape
-              (None, max_length, n_features * embed_size).
+              (None, max_length, embed_size).
 
         HINTS:
             - You might find tf.nn.embedding_lookup useful.
@@ -108,9 +108,8 @@ class SimilarityModel(Model):
               https://www.tensorflow.org/api_docs/python/array_ops/shapes_and_shaping#reshape.
 
         Returns:
-            embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
+            embeddings: tf.Tensor of shape (None, max_length, embed_size)
         """
-        ### YOUR CODE HERE (~4-6 lines)
         embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
 
         # embeddings = tf.Variable(self.pretrained_embeddings)
@@ -122,7 +121,6 @@ class SimilarityModel(Model):
         # reshape the embeddings to 3-D tensors of shape (num_examples, max_length, embed_size)
         embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
         embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
-        ### END YOUR CODE
         return embeddings1, embeddings2
 
     def add_prediction_op(self):
@@ -167,20 +165,13 @@ class SimilarityModel(Model):
         x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
-        # Use the cell defined below. For Q2, we will just be using the
-        # RNNCell you defined, but for Q3, we will run this code again
-        # with a GRU cell!
-        # if self.config.cell == "rnn":
-        
-        # cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
-
-        cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
-
-
-        # elif self.config.cell == "gru":
-            # cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
-        # else:
-            # raise ValueError("Unsuppported cell type: " + self.config.cell)
+        # choose cell type
+        if self.config.cell == "rnn":
+            cell = RNNCell(self.config.embed_size, self.config.hidden_size)
+        elif self.config.cell == "gru":
+            cell = GRUCell(self.config.embed_size, self.config.hidden_size)
+        else:
+            raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
         # ONLY FOR LSTM!
@@ -191,7 +182,6 @@ class SimilarityModel(Model):
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.helper.max_length):
-                ### YOUR CODE HERE (~6-10 lines)
                 if time_step > 0:
                     scope.reuse_variables()
 
@@ -201,30 +191,30 @@ class SimilarityModel(Model):
                     scope.reuse_variables()
 
                 o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
-                ### END YOUR CODE
 
-        ### YOUR CODE HERE (~2-4 lines)
-        self.logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
-        self.logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
+        # scalar variables
+        logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
+        logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
-        self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-
-        # logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
-        # logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
-        # preds = tf.sigmoid(self.logistic_a * norm(h1 - h2 + 0.000001) + self.logistic_b)
-        # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
-        preds = tf.sigmoid(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1) + self.logistic_b)
-        ### END YOUR CODE
-
+        if self.config.distance_measure == "l2":
+            distance = norm(h1 - h2 + 0.000001)
+        elif self.config.distance_measure == "cosine":
+            distance = cosine_distance(h1, h2)
+        elif self.config.distance_measure == "custom_coef":
+            self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
+            preds = tf.sigmoid(tf.sqrt(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)) + self.logistic_b)
+            return preds
+        else:
+            raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
+        
+        preds = tf.sigmoid(self.logistic_a * distance + self.logistic_b)
         return preds
-
 
     def add_loss_op(self, preds):
         """Adds Ops for the loss function to the computational graph.
 
         Args:
-            pred: A tensor of shape (batch_size, n_classes) containing the output of the neural
-                  network before the softmax layer.
+            preds: A tensor of shape (batch_size,) containing the output of the neural network
         Returns:
             loss: A 0-d tensor (scalar)
         """

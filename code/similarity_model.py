@@ -182,8 +182,11 @@ class SimilarityModel(Model):
         # Initialize state as vector of zeros.
         ### YOUR CODE HERE (~4-6 lines)
 
-        h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
-        h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+        # h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
+        # h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+
+        h1 = tf.get_variable("h1", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+        h2 = tf.get_variable("h2", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
         self.h1 = h1
         self.h2 = h2
         ### END YOUR CODE
@@ -200,8 +203,6 @@ class SimilarityModel(Model):
                     scope.reuse_variables()
 
                 o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
-                self.h1 = h1
-                self.h2 = h2
                 ### END YOUR CODE
 
         ### YOUR CODE HERE (~2-4 lines)

@@ -110,10 +110,11 @@ class SimilarityModel(Model):
         Returns:
             embeddings: tf.Tensor of shape (None, max_length, embed_size)
         """
-        embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
-
-        # embeddings = tf.Variable(self.pretrained_embeddings)
-        # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+        # embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
+        glove_vectors = tf.constant(self.pretrained_embeddings)
+        additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+        embeddings = [glove_vectors, additional_embeddings]
+        
         # look up values of input indices from pretrained embeddings
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)

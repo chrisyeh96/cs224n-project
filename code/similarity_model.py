@@ -114,15 +114,13 @@ class SimilarityModel(Model):
 
         # embeddings = tf.Variable(self.pretrained_embeddings)
         # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
-        # combined_embeddings = tf.stack([embeddings, additional_embeddings])
-        # look up values of input indeces from pretrained embeddings
+        # look up values of input indices from pretrained embeddings
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
-        # embeddings1 = tf.nn.embedding_lookup([self.pretrained_embeddings, self.helper.additional_embeddings], self.input_placeholder1)
-        # embeddings2 = tf.nn.embedding_lookup([self.pretrained_embeddings, self.helper.additional_embeddings], self.input_placeholder2)
-        # reshape the embeddings
-        embeddings1 = tf.reshape(embeddings1, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
-        embeddings2 = tf.reshape(embeddings2, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
+
+        # reshape the embeddings to 3-D tensors of shape (num_examples, max_length, embed_size)
+        embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
+        embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
         ### END YOUR CODE
         return embeddings1, embeddings2
 
@@ -179,12 +177,11 @@ class SimilarityModel(Model):
             # raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
-        # Initialize state as vector of zeros.
-        ### YOUR CODE HERE (~4-6 lines)
+        # ONLY FOR LSTM!
 
+        # Initialize hidden states to zero vectors of shape (num_examples, hidden_size)
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
-        ### END YOUR CODE
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.helper.max_length):

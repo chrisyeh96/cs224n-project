@@ -3,6 +3,7 @@ from __future__ import print_function
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
+from gru_cell import GRUCell
 from util import Progbar, minibatches, cosine_distance, norm
 import numpy as np
 import pdb
@@ -172,7 +173,12 @@ class SimilarityModel(Model):
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
         # if self.config.cell == "rnn":
-        cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        
+        # cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+
+        cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+
+
         # elif self.config.cell == "gru":
             # cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
         # else:

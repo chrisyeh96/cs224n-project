@@ -169,8 +169,6 @@ class SimilarityModel(Model):
         x1, x2 = self.add_embedding()
         dropout_rate = self.dropout_placeholder
 
-        preds = 0 # Predicted total output
-
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
@@ -188,7 +186,6 @@ class SimilarityModel(Model):
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
         ### END YOUR CODE
-        o1_t, o2_t = 0, 0
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.helper.max_length):
@@ -196,15 +193,12 @@ class SimilarityModel(Model):
                 if time_step > 0:
                     scope.reuse_variables()
 
-                o1_t, h1_t = cell(x1[:, time_step, :], tf.pack(h1), scope)
+                o1_t, h1 = cell(x1[:, time_step, :], tf.pack(h1), scope)
 
                 if time_step == 0:
                     scope.reuse_variables()
 
-                o2_t, h2_t = cell(x2[:, time_step, :], tf.pack(h2), scope)
-                # h[time_step] = h_t
-                h1 = h1_t
-                h2 = h2_t
+                o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
                 ### END YOUR CODE
 
         # Make sure to reshape @preds here.

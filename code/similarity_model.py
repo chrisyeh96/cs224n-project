@@ -172,9 +172,9 @@ class SimilarityModel(Model):
         # with a GRU cell!
         # if self.config.cell == "rnn":
         
-        cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        # cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
 
-        # cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
 
 
         # elif self.config.cell == "gru":

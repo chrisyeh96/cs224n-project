@@ -3,7 +3,7 @@ from __future__ import print_function
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
-from util import Progbar, minibatches, cosine_distance
+from util import Progbar, minibatches, cosine_distance, norm
 import numpy as np
 import pdb
 
@@ -110,7 +110,6 @@ class SimilarityModel(Model):
             embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
         """
         ### YOUR CODE HERE (~4-6 lines)
-
         embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
 
         # embeddings = tf.Variable(self.pretrained_embeddings)
@@ -201,11 +200,11 @@ class SimilarityModel(Model):
                 o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
                 ### END YOUR CODE
 
-        # Make sure to reshape @preds here.
-        ### YOUR CODE HERE (~2-4 lines) 
-        preds = (cosine_distance(h1, h2) + 1.0) / 2.0 
-        # preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2))
-        # preds = tf.transpose(preds)
+        ### YOUR CODE HERE (~2-4 lines)
+        logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
+        logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
+        preds = tf.sigmoid(logistic_a * norm(h1 - h2) + logistic_b)
+        # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
         ### END YOUR CODE
 
         return preds

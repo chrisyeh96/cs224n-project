@@ -184,6 +184,8 @@ class SimilarityModel(Model):
 
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+        self.h1 = h1
+        self.h2 = h2
         ### END YOUR CODE
 
         with tf.variable_scope("RNN") as scope:
@@ -309,7 +311,10 @@ class SimilarityModel(Model):
         for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
-            _, loss, a, b = sess.run([self.train_op, self.loss, self.logistic_a, self.logistic_b], feed_dict=feed)
+            _, loss, h1, h2 = sess.run([self.train_op, self.loss, self.h1, self.h2], feed_dict=feed)
+            print("h1 and h2")
+            print(h1)
+            print(h2)
             prog.update(i+1, [("train loss", loss)])
         print("")
 

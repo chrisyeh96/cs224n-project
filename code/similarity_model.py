@@ -201,12 +201,12 @@ class SimilarityModel(Model):
                 ### END YOUR CODE
 
         ### YOUR CODE HERE (~2-4 lines)
-        logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
-        logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
+        self.logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
+        self.logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
 
         # logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
         # logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
-        preds = tf.sigmoid(logistic_a * norm(h1 - h2) + logistic_b)
+        preds = tf.sigmoid(self.logistic_a * norm(h1 - h2) + self.logistic_b)
         # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
         ### END YOUR CODE
 
@@ -309,9 +309,10 @@ class SimilarityModel(Model):
         for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
-            _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
+            _, loss, a, b = sess.run([self.train_op, self.loss, self.logistic_a, self.logistic_b], feed_dict=feed)
+            print("log a: %f, log b: %f" % (a, b))
             prog.update(i+1, [("train loss", loss)])
-            print("")
+        print("")
 
         percentage_correct = self.evaluate(sess, dev_set)
         return percentage_correct

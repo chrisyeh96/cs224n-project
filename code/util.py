@@ -24,7 +24,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 def cosine_distance(h1, h2):
     return tf.reduce_sum(tf.mul(h1, h2), axis=1) / norm(h1) / norm(h2)
 
-def norm(self, vector):
+def norm(vector):
     return tf.sqrt(tf.reduce_sum(tf.square(vector), axis=1))
 
 def read_conll(fstream):

@@ -257,28 +257,7 @@ class SimilarityModel(Model):
         predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
         return predictions    
 
-    # outputs predictions after training
-    def output(self, sess, inputs):
-        """
-        Args:
-            sess: a TFSession
-            examples: [ list of all sentence 1,
-                        list of all sentence 2,
-                        list of all labels ]
-        Returns:
-            TODO
-        """
-        preds = []
-        prog = Progbar(target=1+int(len(inputs)/ self.config.batch_size))
-        for i, batch in enumerate(self.stupid_minibatch(inputs, self.config.batch_size)):
-            # Ignore predict
-            batch = batch[:2] + batch[3:]
-            preds_ = self.predict_on_batch(sess, *batch)
-            preds += list(preds_)
-            prog.update(i + 1, [])
-
-        return preds
-
+    # evaluate model after training
     def evaluate(self, sess, examples):
         """
         Args:
@@ -288,20 +267,22 @@ class SimilarityModel(Model):
                         list of all labels ]
         Returns:
             fraction of correct predictions
+            TODO: maybe return the actual predictions as well
         """
-        correct_preds, total_preds = 0.0, 0.0
+        correct_preds = 0.0
+        num_examples = len(examples)
 
-        preds = self.output(sess, examples_raw, examples)
-        print("prediction length: %d" % len(preds))
+        preds = []
+        prog = Progbar(target=1+int(num_examples / self.config.batch_size))
+        for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
+            # Ignore labels
+            sentence1_batch, sentence2_batch, labels_batch = batch
+            preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
+            preds += list(preds_)
+            correct_preds += (preds_ == labels_batch).sum()
+            prog.update(i + 1, [])
 
-        for i, prediction in enumerate(preds):
-            true_label = examples_raw[i][2]
-
-            if true_label == prediction:
-                correct_preds += 1.0
-            total_preds += 1
-
-        return correct_preds / total_preds
+        return correct_preds / num_examples
 
     def train_on_batch(self, sess, inputs_batch1, inputs_batch2, labels_batch):
         # split up inputs into inputs 1 and inputs 2

@@ -162,7 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch_size", type=int, required=False, help="number of examples for each minibatch")
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef"], help="distance measure")
-    parser.add_argument("-r", "--reg_constant", type=int, required=False, help="regularization constant")
+    parser.add_argument("-r", "--reg_constant", type=float, required=False, help="regularization constant")
     args = parser.parse_args()
 
     config = Config()

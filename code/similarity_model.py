@@ -223,7 +223,7 @@ class SimilarityModel(Model):
         """
         ### YOUR CODE HERE (~2-4 lines)
         loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
-        loss += self.config.regularization_constant * self.regularization_factor
+        loss += self.config.regularization_constant * self.regularization_term
         # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss

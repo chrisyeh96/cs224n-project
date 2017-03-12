@@ -3,6 +3,7 @@ from __future__ import print_function
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
+from gru_cell import GRUCell
 from util import Progbar, minibatches, cosine_distance, norm
 import numpy as np
 import pdb
@@ -170,7 +171,12 @@ class SimilarityModel(Model):
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
         # if self.config.cell == "rnn":
-        cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        
+        # cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+
+        cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+
+
         # elif self.config.cell == "gru":
             # cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
         # else:
@@ -182,6 +188,15 @@ class SimilarityModel(Model):
         # Initialize hidden states to zero vectors of shape (num_examples, hidden_size)
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
+<<<<<<< HEAD
+=======
+
+        # h1 = tf.get_variable("h1", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+        # h2 = tf.get_variable("h2", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+        # self.h1 = h1
+        # self.h2 = h2
+        ### END YOUR CODE
+>>>>>>> ab2da3f8efd6e08424cf1e5c1396abb97bb3686e
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.helper.max_length):
@@ -198,11 +213,12 @@ class SimilarityModel(Model):
                 ### END YOUR CODE
 
         ### YOUR CODE HERE (~2-4 lines)
-        logistic_a = tf.get_variable("a", (1,), tf.float32, tf.contrib.layers.xavier_initializer())
-        logistic_b = tf.get_variable("b", (1,), tf.float32, tf.constant_initializer(0))
+        self.logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
+        self.logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
+
         # logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
         # logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
-        preds = tf.sigmoid(logistic_a * norm(h1 - h2) + logistic_b)
+        preds = tf.sigmoid(self.logistic_a * norm(h1 - h2 + 0.000001) + self.logistic_b)
         # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
         ### END YOUR CODE
 
@@ -252,8 +268,6 @@ class SimilarityModel(Model):
     def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
         predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
-        # print("Predictions:")
-        # print(predictions)
         return np.round(predictions).astype(int)
 
     # evaluate model after training

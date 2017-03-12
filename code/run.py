@@ -26,7 +26,7 @@ class Config:
     embed_size = 50
     hidden_size = 300
     batch_size = 32
-    n_epochs = 10
+    n_epochs = 1
     max_grad_norm = 10.
     lr = 0.001
 

@@ -207,10 +207,13 @@ class SimilarityModel(Model):
         self.logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
         self.logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
 
+        self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
+
         # logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
         # logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
-        preds = tf.sigmoid(self.logistic_a * norm(h1 - h2 + 0.000001) + self.logistic_b)
+        # preds = tf.sigmoid(self.logistic_a * norm(h1 - h2 + 0.000001) + self.logistic_b)
         # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
+        preds = tf.sigmoid(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1) + self.logistic_b)
         ### END YOUR CODE
 
         return preds

@@ -203,7 +203,7 @@ class SimilarityModel(Model):
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             distance = tf.sqrt(tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1))
-            logistic_a = tf.Constant(1.0)
+            logistic_a = tf.constant(1.0)
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         

@@ -3,7 +3,7 @@ from __future__ import print_function
 import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
-from util import Progbar, minibatches
+from util import Progbar, minibatches, cosine_distance
 import numpy as np
 import pdb
 
@@ -203,15 +203,13 @@ class SimilarityModel(Model):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        preds = ((tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2)) + 1.0) / 2.0 
+        preds = (cosine_distance(h1, h2) + 1.0) / 2.0 
         # preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2))
         # preds = tf.transpose(preds)
         ### END YOUR CODE
 
         return preds
 
-    def norm(self, vector):
-        return tf.sqrt(tf.reduce_sum(tf.square(vector), axis=1))
 
     def add_loss_op(self, preds):
         """Adds Ops for the loss function to the computational graph.

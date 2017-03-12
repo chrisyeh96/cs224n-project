@@ -310,7 +310,6 @@ class SimilarityModel(Model):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
             _, loss, a, b = sess.run([self.train_op, self.loss, self.logistic_a, self.logistic_b], feed_dict=feed)
-            print("log a: %f, log b: %f" % (a, b))
             prog.update(i+1, [("train loss", loss)])
         print("")
 

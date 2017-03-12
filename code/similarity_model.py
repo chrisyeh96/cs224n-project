@@ -201,18 +201,12 @@ class SimilarityModel(Model):
                 ### END YOUR CODE
 
         ### YOUR CODE HERE (~2-4 lines)
-        with tf.variable_scope("RNN") as scope:
-            try:
-                logistic_a = tf.get_variable("a", (1,), tf.float32, tf.contrib.layers.xavier_initializer())
-                logistic_b = tf.get_variable("b", (1,), tf.float32, tf.constant_initializer(0))
-            except:
-                scope.reuse_variables()
-                logistic_a = tf.get_variable("a", (1,), tf.float32, tf.contrib.layers.xavier_initializer())
-                logistic_b = tf.get_variable("b", (1,), tf.float32, tf.constant_initializer(0))
+        logistic_a = tf.get_variable("a", [], tf.float32, tf.contrib.layers.xavier_initializer())
+        logistic_b = tf.get_variable("b", [], tf.float32, tf.constant_initializer(0))
 
         # logistic_a = tf.Variable(tf.zeros([1], dtype=tf.float32))
         # logistic_b = tf.Variable(tf.zeros([1], dtype=tf.float32))
-            preds = tf.sigmoid(logistic_a * norm(h1 - h2) + logistic_b)
+        preds = tf.sigmoid(logistic_a * norm(h1 - h2) + logistic_b)
         # preds = (cosine_distance(h1, h2) + 1.0) / 2.0
         ### END YOUR CODE
 

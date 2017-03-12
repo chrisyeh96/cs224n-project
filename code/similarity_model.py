@@ -172,9 +172,9 @@ class SimilarityModel(Model):
         # with a GRU cell!
         # if self.config.cell == "rnn":
         
-        # cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        cell = RNNCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
 
-        cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+        # cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
 
 
         # elif self.config.cell == "gru":
@@ -188,15 +188,6 @@ class SimilarityModel(Model):
         # Initialize hidden states to zero vectors of shape (num_examples, hidden_size)
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
-<<<<<<< HEAD
-=======
-
-        # h1 = tf.get_variable("h1", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-        # h2 = tf.get_variable("h2", (tf.shape(x1)[0], self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-        # self.h1 = h1
-        # self.h2 = h2
-        ### END YOUR CODE
->>>>>>> ab2da3f8efd6e08424cf1e5c1396abb97bb3686e
 
         with tf.variable_scope("RNN") as scope:
             for time_step in range(self.helper.max_length):

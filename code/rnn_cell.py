@@ -66,7 +66,7 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
             W_x = tf.get_variable("W_x", (self.input_size, self.state_size), tf.float32, tf.contrib.layers.xavier_initializer())
             b = tf.get_variable("b", (self.state_size,), tf.float32, tf.contrib.layers.xavier_initializer())
 
-            new_state = tf.nn.sigmoid(tf.matmul(inputs, W_x) + tf.matmul(state, W_h)  + b)
+            new_state = tf.tanh(tf.matmul(inputs, W_x) + tf.matmul(state, W_h)  + b)
             ### END YOUR CODE ###
         # For an RNN , the output and state are the same (N.B. this
         # isn't true for an LSTM, though we aren't using one of those in

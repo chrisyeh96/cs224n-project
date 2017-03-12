@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 import sys, os, time, pickle
 from similarity_model import SimilarityModel
+import argparse
 
 TRAIN_DATA_PATH = "../data/quora/train.tsv"
 TEST_DATA_PATH = "../data/quora/test.tsv"
@@ -157,8 +158,22 @@ class ModelHelper(object):
 
 
 if __name__ == "__main__":
-    print("Preparing data...")
+    description = "Run the similarity_model"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-b", "--batch_size", type=int, required=False, help="number of examples for each minibatch")
+    parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
+    parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef"], help="distance measure")
+    args = parser.parse_args()
+
     config = Config()
+    if args.batch_size is not None:
+        config.batch_size = args.batch_size
+    if args.cell is not None:
+        config.cell = args.cell
+    if args.distance_measure is not None:
+        config.distance_measure = args.distance_measure
+
+    print("Preparing data...")
     helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)
     print(train_raw[0])
     print(dev_raw[0])

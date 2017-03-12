@@ -47,10 +47,10 @@ class SimilarityModel(Model):
         (Don't change the variable names)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.helper.max_length, self.config.n_features))
-        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.helper.max_length, self.config.n_features))
+        self.input_placeholder1 = tf.placeholder(tf.int32, (None, self.helper.max_length))
+        self.input_placeholder2 = tf.placeholder(tf.int32, (None, self.helper.max_length))
 
-        self.labels_placeholder = tf.placeholder(tf.int32, (None, self.helper.max_length))
+        self.labels_placeholder = tf.placeholder(tf.int32, (None,))
         self.dropout_placeholder = tf.placeholder(tf.float32)
         ### END YOUR CODE
 
@@ -110,10 +110,17 @@ class SimilarityModel(Model):
             embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        embeddings = tf.Variable(self.pretrained_embeddings)
+
+        embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
+
+        # embeddings = tf.Variable(self.pretrained_embeddings)
+        # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+        # combined_embeddings = tf.stack([embeddings, additional_embeddings])
         # look up values of input indeces from pretrained embeddings
-        embeddings1 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder1)
-        embeddings2 = tf.nn.embedding_lookup([embeddings, self.helper.additional_embeddings], self.input_placeholder2)
+        embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
+        embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
+        # embeddings1 = tf.nn.embedding_lookup([self.pretrained_embeddings, self.helper.additional_embeddings], self.input_placeholder1)
+        # embeddings2 = tf.nn.embedding_lookup([self.pretrained_embeddings, self.helper.additional_embeddings], self.input_placeholder2)
         # reshape the embeddings
         embeddings1 = tf.reshape(embeddings1, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
         embeddings2 = tf.reshape(embeddings2, (-1, self.helper.max_length, self.config.n_features * self.config.embed_size)) 
@@ -192,6 +199,10 @@ class SimilarityModel(Model):
                     scope.reuse_variables()
 
                 o1_t, h1_t = cell(x1[:, time_step, :], tf.pack(h1), scope)
+
+                if time_step == 0:
+                    scope.reuse_variables()
+
                 o2_t, h2_t = cell(x2[:, time_step, :], tf.pack(h2), scope)
                 # h[time_step] = h_t
                 h1 = h1_t
@@ -200,11 +211,15 @@ class SimilarityModel(Model):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        preds = tf.round(tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / tf.norm(h1, axis=1) / tf.norm(h2, axis=1)))
+        # preds = ((tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2)) + 1.0) / 2.0 
+        preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2))
         # preds = tf.transpose(preds)
         ### END YOUR CODE
 
         return preds
+
+    def norm(self, vector):
+        return tf.sqrt(tf.reduce_sum(tf.square(vector), axis=1))
 
     def add_loss_op(self, preds):
         """Adds Ops for the loss function to the computational graph.
@@ -216,7 +231,8 @@ class SimilarityModel(Model):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
+        # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss
 
@@ -310,7 +326,7 @@ class SimilarityModel(Model):
             yield (sent1[start:end], sent2[start:end], labels[start:end])
 
     def run_epoch(self, sess, train_examples, dev_set):
-        prog = Progbar(target = 1 + int(len(train_examples) / self.config.batch_size))
+        prog = Progbar(target = 1 + int(len(train_examples[0]) / self.config.batch_size))
         
         for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
             loss = self.train_on_batch(sess, *batch)
@@ -331,7 +347,7 @@ class SimilarityModel(Model):
         dev_set = self.preprocess_sequence_data(dev_set_raw)
 
         for epoch in range(self.config.n_epochs):
-            print("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
+            print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
             score = self.run_epoch(sess, train_examples, dev_set)
             if score > best_score:
                 best_score = score

@@ -15,10 +15,17 @@ import StringIO
 from collections import defaultdict, Counter, OrderedDict
 import numpy as np
 from numpy import array, zeros, allclose
+import tensorflow as tf
 
 logger = logging.getLogger("hw3")
 logger.setLevel(logging.DEBUG)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+def cosine_distance(h1, h2):
+    return tf.reduce_sum(tf.mul(h1, h2), axis=1) / norm(h1) / norm(h2)
+
+def norm(vector):
+    return tf.sqrt(tf.reduce_sum(tf.square(vector), axis=1))
 
 def read_conll(fstream):
     """

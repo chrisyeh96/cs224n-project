@@ -343,5 +343,5 @@ class SimilarityModel(Model):
             if score > best_score:
                 best_score = score
                 print("New best score: %f" % best_score)
-            print ""
+            print("")
         return best_score

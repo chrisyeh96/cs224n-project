@@ -211,8 +211,8 @@ class SimilarityModel(Model):
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines) 
-        # preds = ((tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2)) + 1.0) / 2.0 
-        preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2))
+        preds = ((tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2)) + 1.0) / 2.0 
+        # preds = tf.sigmoid(tf.reduce_sum(tf.mul(h1, h2), axis=1) / self.norm(h1) / self.norm(h2))
         # preds = tf.transpose(preds)
         ### END YOUR CODE
 

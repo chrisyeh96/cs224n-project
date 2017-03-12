@@ -196,6 +196,8 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
+        self.regularization_factor = logistic_a + logistic_b
+
         if self.config.distance_measure == "l2":
             distance = norm(h1 - h2 + 0.000001)
         elif self.config.distance_measure == "cosine":
@@ -204,6 +206,7 @@ class SimilarityModel(Model):
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
             logistic_a = tf.constant(1.0)
+            self.regularization_factor = tf.reduce_sum(self.coefficients) + logistic_b
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         
@@ -220,6 +223,7 @@ class SimilarityModel(Model):
         """
         ### YOUR CODE HERE (~2-4 lines)
         loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
+        loss += self.config.regularization_constant * self.regularization_factor
         # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss

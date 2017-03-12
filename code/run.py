@@ -23,10 +23,12 @@ class Config:
     # word vector dimensions
     embed_size = 50
     hidden_size = 100
-    batch_size = 4096
+    batch_size = 2048
     n_epochs = 20
     max_grad_norm = 10.
     lr = 0.001
+
+    regularization_constant = 0.1
 
     distance_measure = "custom_coef" # one of ["l2", "cosine", "custom_coef"]
     cell = "gru" # one of ["rnn", "gru"]

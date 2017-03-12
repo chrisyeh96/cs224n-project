@@ -23,13 +23,13 @@ class Config:
     # word vector dimensions
     embed_size = 50
     hidden_size = 100
-    batch_size = 2048
+    batch_size = 4096
     n_epochs = 20
     max_grad_norm = 10.
     lr = 0.001
 
     distance_measure = "custom_coef" # one of ["l2", "cosine", "custom_coef"]
-    cell = "rnn" # one of ["rnn", "gru"]
+    cell = "gru" # one of ["rnn", "gru"]
 
 def normalize(word):
     """

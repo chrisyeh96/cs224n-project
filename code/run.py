@@ -30,8 +30,8 @@ class Config:
 
     regularization_constant = 0.1
 
-    distance_measure = "custom_coef" # one of ["l2", "cosine", "custom_coef"]
-    cell = "gru" # one of ["rnn", "gru"]
+    distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
+    cell = "rnn" # one of ["rnn", "gru"]
 
 def normalize(word):
     """

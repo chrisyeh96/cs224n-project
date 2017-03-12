@@ -287,12 +287,6 @@ class SimilarityModel(Model):
 
         return correct_preds / num_examples
 
-    def train_on_batch(self, sess, inputs_batch1, inputs_batch2, labels_batch):
-        # split up inputs into inputs 1 and inputs 2
-        feed = self.create_feed_dict(inputs_batch1, inputs_batch2, labels_batch, dropout=self.config.dropout)
-        _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
-        return loss
-
     def stupid_minibatch(self, train_examples, batch_size):
         sent1, sent2, labels = train_examples
         num_examples = len(sent1)
@@ -302,10 +296,22 @@ class SimilarityModel(Model):
             yield (sent1[start:end], sent2[start:end], labels[start:end])
 
     def run_epoch(self, sess, train_examples, dev_set):
+        """
+        Args:
+            sess: TFSession
+            train_examples: [ list of all sentence 1,
+                        list of all sentence 2,
+                        list of all labels ]
+            dev_set: same as train_examples, except for the dev set
+        Returns:
+            percentage of correct predictions on the dev set
+        """
         prog = Progbar(target = 1 + int(len(train_examples[0]) / self.config.batch_size))
         
         for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
-            loss = self.train_on_batch(sess, *batch)
+            sentence1_batch, sentence2_batch, labels_batch = batch
+            feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
+            _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
             prog.update(i+1, [("train loss", loss)])
         print("")
 
@@ -316,6 +322,16 @@ class SimilarityModel(Model):
         return zip(*examples)
 
     def fit(self, sess, saver, train_examples_raw, dev_set_raw):
+        """
+        Args:
+            sess: TFSession
+            saver: TODO
+            train_examples_raw: list of training examples, each example is a
+                tuple (s1, s2, label) where s1,s2 are padded/truncated sentences
+            dev_set_raw: same as train_examples_raw, except for the dev set
+        Returns:
+            best training loss over the self.config.n_epochs of training
+        """
         best_score = 0.
 
         # unpack data

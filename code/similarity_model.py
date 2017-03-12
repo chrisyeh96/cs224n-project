@@ -200,6 +200,8 @@ class SimilarityModel(Model):
                     scope.reuse_variables()
 
                 o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
+                self.h1 = h1
+                self.h2 = h2
                 ### END YOUR CODE
 
         ### YOUR CODE HERE (~2-4 lines)

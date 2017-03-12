@@ -15,6 +15,7 @@ import StringIO
 from collections import defaultdict, Counter, OrderedDict
 import numpy as np
 from numpy import array, zeros, allclose
+import tensorflow as tf
 
 logger = logging.getLogger("hw3")
 logger.setLevel(logging.DEBUG)

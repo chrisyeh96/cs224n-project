@@ -114,7 +114,7 @@ class SimilarityModel(Model):
         glove_vectors = tf.constant(self.pretrained_embeddings)
         additional_embeddings = tf.Variable(self.helper.additional_embeddings)
         embeddings = [glove_vectors, additional_embeddings]
-        
+
         # look up values of input indices from pretrained embeddings
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
@@ -186,12 +186,12 @@ class SimilarityModel(Model):
                 if time_step > 0:
                     scope.reuse_variables()
 
-                o1_t, h1 = cell(x1[:, time_step, :], tf.pack(h1), scope)
+                o1_t, h1 = cell(x1[:, time_step, :], h1, scope)
 
                 if time_step == 0:
                     scope.reuse_variables()
 
-                o2_t, h2 = cell(x2[:, time_step, :], tf.pack(h2), scope)
+                o2_t, h2 = cell(x2[:, time_step, :], h2, scope)
 
         # scalar variables
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")

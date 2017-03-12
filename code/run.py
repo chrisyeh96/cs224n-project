@@ -19,8 +19,6 @@ class Config:
     instantiation.
     """
     # each word just indexes into glove vectors
-    n_features = 1
-    n_classes = 2
     dropout = 0.5
     # word vector dimensions
     embed_size = 50
@@ -29,6 +27,9 @@ class Config:
     n_epochs = 20
     max_grad_norm = 10.
     lr = 0.001
+
+    distance_measure = "l2" # one of ["l2", "cosine"]
+    cell = "rnn" # one of ["rnn", "gru"]
 
 def normalize(word):
     """

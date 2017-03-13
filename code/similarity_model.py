@@ -110,10 +110,10 @@ class SimilarityModel(Model):
         Returns:
             embeddings: tf.Tensor of shape (None, max_length, embed_size)
         """
-        # embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
-        glove_vectors = tf.constant(self.pretrained_embeddings)
-        additional_embeddings = tf.Variable(self.helper.additional_embeddings)
-        embeddings = [glove_vectors, additional_embeddings]
+        embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
+        # glove_vectors = tf.Variable(self.pretrained_embeddings)
+        # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+        # embeddings = [glove_vectors, additional_embeddings]
 
         # look up values of input indices from pretrained embeddings
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
@@ -197,15 +197,23 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
+        U = tf.get_variable("U", (self.config.hidden_size, self.config.output_size), tf.float32, tf.contrib.layers.xavier_initializer())
+        b = tf.get_variable("b", (self.config.output_size,), tf.float32, tf.constant_initializer(0))
+
+        h_drop1 = tf.nn.dropout(h1, dropout_rate)
+        h_drop2 = tf.nn.dropout(h2, dropout_rate)
+        y1 = tf.matmul(h_drop1, U) + b
+        y2 = tf.matmul(h_drop2, U) + b
+
         self.regularization_term = logistic_a + logistic_b
 
         if self.config.distance_measure == "l2":
-            distance = norm(h1 - h2 + 0.000001)
+            distance = norm(y1 - y2 + 0.000001)
         elif self.config.distance_measure == "cosine":
-            distance = cosine_distance(h1, h2)
+            distance = cosine_distance(y1, y2)
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-            distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
+            distance = tf.reduce_sum(self.coefficients * tf.square(y1 - y2 + 0.000001), axis=1)
             logistic_a = tf.constant(1.0)
             self.regularization_term = tf.reduce_sum(self.coefficients) + logistic_b
         else:

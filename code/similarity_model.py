@@ -294,9 +294,9 @@ class SimilarityModel(Model):
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
             preds += list(preds_)
-            tp += np.logical_and(preds_ == 1, labels_batch == 1).sum()
-            fp += np.logical_and(preds_ == 1, labels_batch == 0).sum()
-            fn += np.logical_and(preds_ == 0, labels_batch == 1).sum()
+            tp += ((preds_ == 1) & (labels_batch == 1)).sum()
+            fp += ((preds_ == 1) & (labels_batch == 0)).sum()
+            fn += ((preds_ == 0) & (labels_batch == 1)).sum()
 
             correct_preds += (preds_ == labels_batch).sum()
 

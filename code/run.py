@@ -6,8 +6,8 @@ import sys, os, time, pickle
 from similarity_model import SimilarityModel
 import argparse
 
-TRAIN_DATA_PATH = "../data/quora/train.tsv"
-TEST_DATA_PATH = "../data/quora/test.tsv"
+TRAIN_DATA_PATH = "../data/quora/spellchecked/train_sp.tsv"
+TEST_DATA_PATH = "../data/quora/spellchecked/test_sp.tsv"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.200d.npy"
 TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.200d.pkl"
 MAX_LENGTH_PATH = "../data/quora/max_length.pkl"
@@ -32,7 +32,7 @@ class Config:
 
     distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
     cell = "rnn" # one of ["rnn", "gru"]
-    regularization_constant = 0.1
+    regularization_constant = 0.001
 
 def normalize(word):
     """

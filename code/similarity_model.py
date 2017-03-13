@@ -281,6 +281,10 @@ class SimilarityModel(Model):
             TODO: maybe return the actual predictions as well
         """
         correct_preds = 0.0
+        tp = 0.0
+        fp = 0.0
+        fn = 0.0
+
         num_examples = len(examples[0])
 
         preds = []
@@ -290,10 +294,20 @@ class SimilarityModel(Model):
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
             preds += list(preds_)
+            tp += np.logical_and(preds_ == 1, labels_batch == 1).sum()
+            fp += np.logical_and(preds_ == 1, labels_batch == 0).sum()
+            fn += np.logical_and(preds_ == 0, labels_batch == 1).sum()
+
             correct_preds += (preds_ == labels_batch).sum()
+
             prog.update(i + 1, [])
 
-        return correct_preds / num_examples
+        accuracy = correct_preds / num_examples
+        precision = (tp)/(tp + fp) if tp > 0  else 0
+        recall = (tp)/(tp + fn) if tp > 0  else 0
+        f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
+
+        return (accuracy, precision, recall, f1)
 
     def stupid_minibatch(self, train_examples, batch_size):
         sent1, sent2, labels = train_examples
@@ -323,8 +337,8 @@ class SimilarityModel(Model):
             prog.update(i+1, [("train loss", loss)])
         print("")
 
-        percentage_correct = self.evaluate(sess, dev_set)
-        return percentage_correct
+        accuracy, precision, recall, f1 = self.evaluate(sess, dev_set)
+        return accuracy
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)
@@ -348,9 +362,14 @@ class SimilarityModel(Model):
 
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
-            score = self.run_epoch(sess, train_examples, dev_set)
+            score, precision, recall, f1 = self.run_epoch(sess, train_examples, dev_set)
             if score > best_score:
                 best_score = score
                 print("New best score: %f" % best_score)
+
+            print("Precision: %f" % precision)
+            print("Recall: %f" % recall)
+            print("F1 Score: %f" % f1)
+
             print("")
         return best_score

@@ -116,12 +116,13 @@ class SimilarityModel(Model):
         embeddings = tf.concat(0, [glove_vectors, additional_embeddings])
 
         # look up values of input indices from pretrained embeddings
+        # embeddings1 and embeddings2 will have shape (num_examples, max_length, embed_size)
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
 
         # reshape the embeddings to 3-D tensors of shape (num_examples, max_length, embed_size)
-        embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
-        embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
+        # embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
+        # embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
         return embeddings1, embeddings2
 
     def add_prediction_op(self):

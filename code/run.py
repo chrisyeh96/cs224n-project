@@ -24,6 +24,7 @@ class Config:
     # word vector dimensions
     embed_size = 50
     hidden_size = 100
+    output_size = 30
     batch_size = 2048
     n_epochs = 20
     max_grad_norm = 10.

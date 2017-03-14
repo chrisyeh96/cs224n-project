@@ -313,7 +313,7 @@ class SimilarityModel(Model):
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0
-        print("tp: %f, fp: %f, fn: %f" % (tp, fp, fn))
+        print("\ntp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
         return (accuracy, precision, recall, f1)

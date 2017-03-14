@@ -198,25 +198,25 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
-        # U = tf.get_variable("U", (self.config.hidden_size, self.config.output_size), tf.float32, tf.contrib.layers.xavier_initializer())
-        # b = tf.get_variable("b", (self.config.output_size,), tf.float32, tf.constant_initializer(0))
+        U = tf.get_variable("U", (self.config.hidden_size, self.config.output_size), tf.float32, tf.contrib.layers.xavier_initializer())
+        b = tf.get_variable("b", (self.config.output_size,), tf.float32, tf.constant_initializer(0))
 
-        # h_drop1 = tf.nn.dropout(h1, dropout_rate)
-        # h_drop2 = tf.nn.dropout(h2, dropout_rate)
-        # y1 = tf.matmul(h_drop1, U) + b
-        # y2 = tf.matmul(h_drop2, U) + b
+        h_drop1 = tf.nn.dropout(h1, dropout_rate)
+        h_drop2 = tf.nn.dropout(h2, dropout_rate)
+        y1 = tf.matmul(h_drop1, U) + b
+        y2 = tf.matmul(h_drop2, U) + b
 
-        self.regularization_term = logistic_a + logistic_b
+        self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
 
         if self.config.distance_measure == "l2":
-            distance = norm(h1 - h2 + 0.000001)
+            distance = norm(y1 - y2 + 0.000001)
         elif self.config.distance_measure == "cosine":
-            distance = cosine_distance(h1, h2)
+            distance = cosine_distance(y1, y2)
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-            distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
+            distance = tf.reduce_sum(self.coefficients * tf.square(y1 - y2 + 0.000001), axis=1)
             logistic_a = tf.constant(1.0)
-            self.regularization_term = tf.reduce_sum(self.coefficients) + logistic_b
+            self.regularization_term = tf.abs(tf.reduce_sum(self.coefficients)) + tf.abs(logistic_b)
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         
@@ -288,7 +288,7 @@ class SimilarityModel(Model):
         num_examples = len(examples[0])
 
         preds = []
-        prog = Progbar(target=1+int(self.config.batch_size))
+        prog = Progbar(target=1+int(num_examples / self.config.batch_size))
         for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
@@ -296,7 +296,8 @@ class SimilarityModel(Model):
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-            for i in range(preds_.shape[0]):
+
+            for i in preds_.shape[0]:
                 if preds_[i] == 1:
                     if labels_batch[i] == 1:
                         tp += 1.0
@@ -313,7 +314,6 @@ class SimilarityModel(Model):
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0
-        print("tp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
         return (accuracy, precision, recall, f1)
@@ -347,7 +347,7 @@ class SimilarityModel(Model):
         print("")
 
         accuracy, precision, recall, f1 = self.evaluate(sess, dev_set)
-        return (accuracy, precision, recall, f1)
+        return accuracy, precision, recall, f1
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)

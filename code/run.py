@@ -178,27 +178,15 @@ if __name__ == "__main__":
 
     print("Preparing data...")
     helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)
-    print(train_raw[0])
-    print(dev_raw[0])
-    print(train[0])
-    print(dev[0])
     
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
     config.embed_size = embeddings.shape[1]
-    print(config.embed_size)
 
     # append unknown word and padding word vectors
     helper.add_additional_embeddings(embeddings)
 
-
-
-
     with tf.Graph().as_default():
-    #     logger.info("Building model...",)
-    #     start = time.time()
-    #     model = RNNModel(helper, config, embeddings)
-    #     logger.info("took %.2f seconds", time.time() - start)
         print("Building model...")
         start = time.time()
         model = SimilarityModel(helper, config, embeddings)
@@ -211,5 +199,3 @@ if __name__ == "__main__":
             session.run(init)
             model.fit(session, saver, train, dev)
 
-    # logger.info("Model did not crash!")
-    # logger.info("Passed!")

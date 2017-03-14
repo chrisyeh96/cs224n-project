@@ -288,7 +288,7 @@ class SimilarityModel(Model):
         num_examples = len(examples[0])
 
         preds = []
-        prog = Progbar(target=1+int(num_examples / self.config.batch_size))
+        prog = Progbar(target=1+int(self.config.batch_size))
         for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
@@ -296,7 +296,7 @@ class SimilarityModel(Model):
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-            for i in preds_.shape[0]:
+            for i in range(preds_.shape[0]):
                 if preds_[i] == 1:
                     if labels_batch[i] == 1:
                         tp += 1.0
@@ -313,6 +313,7 @@ class SimilarityModel(Model):
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0
+        print("tp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
         return (accuracy, precision, recall, f1)
@@ -346,7 +347,7 @@ class SimilarityModel(Model):
         print("")
 
         accuracy, precision, recall, f1 = self.evaluate(sess, dev_set)
-        return accuracy, precision, recall, f1
+        return (accuracy, precision, recall, f1)
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)

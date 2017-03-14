@@ -294,9 +294,17 @@ class SimilarityModel(Model):
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
             preds += list(preds_)
-            tp += ((preds_ == 1) & (labels_batch == 1)).sum()
-            fp += ((preds_ == 1) & (labels_batch == 0)).sum()
-            fn += ((preds_ == 0) & (labels_batch == 1)).sum()
+            labels_batch = np.array(labels_batch)
+
+            for i in preds_.shape[0]:
+                if preds_[i] == 1:
+                    if labels_batch[i] == 1:
+                        tp += 1.0
+                    else:
+                        fp += 1.0
+                else:
+                    if labels_batch[i] == 1:
+                        fn += 1.0
 
             correct_preds += (preds_ == labels_batch).sum()
 
@@ -363,6 +371,7 @@ class SimilarityModel(Model):
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
             score, precision, recall, f1 = self.run_epoch(sess, train_examples, dev_set)
+            print('Score: ', score)
             if score > best_score:
                 best_score = score
                 print("New best score: %f" % best_score)

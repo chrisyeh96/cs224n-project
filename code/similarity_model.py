@@ -288,7 +288,7 @@ class SimilarityModel(Model):
         num_examples = len(examples[0])
 
         preds = []
-        prog = Progbar(target=1+int(num_examples / self.config.batch_size))
+        prog = Progbar(target=1+int(self.config.batch_size))
         for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
@@ -313,6 +313,7 @@ class SimilarityModel(Model):
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0
+        print("tp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
         return (accuracy, precision, recall, f1)

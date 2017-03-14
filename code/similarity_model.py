@@ -296,7 +296,7 @@ class SimilarityModel(Model):
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-            for i in preds_.shape[0]:
+            for i in range(preds_.shape[0]):
                 if preds_[i] == 1:
                     if labels_batch[i] == 1:
                         tp += 1.0

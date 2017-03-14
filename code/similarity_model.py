@@ -346,7 +346,7 @@ class SimilarityModel(Model):
         print("")
 
         accuracy, precision, recall, f1 = self.evaluate(sess, dev_set)
-        return accuracy, precision, recall, f1
+        return (accuracy, precision, recall, f1)
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)

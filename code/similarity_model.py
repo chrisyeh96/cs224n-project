@@ -288,7 +288,7 @@ class SimilarityModel(Model):
         num_examples = len(examples[0])
 
         preds = []
-        prog = Progbar(target=1+int(num_examples / self.config.batch_size))
+        prog = Progbar(target=1+int(self.config.batch_size))
         for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch

@@ -209,12 +209,12 @@ class SimilarityModel(Model):
         self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
 
         if self.config.distance_measure == "l2":
-            distance = norm(y1 - y2 + 0.000001)
+            distance = norm(h1 - h2 + 0.000001)
         elif self.config.distance_measure == "cosine":
-            distance = cosine_distance(y1, y2)
+            distance = cosine_distance(h1, h2)
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-            distance = tf.reduce_sum(self.coefficients * tf.square(y1 - y2 + 0.000001), axis=1)
+            distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
             logistic_a = tf.constant(1.0)
             self.regularization_term = tf.abs(tf.reduce_sum(self.coefficients)) + tf.abs(logistic_b)
         else:

@@ -204,13 +204,17 @@ class SimilarityModel(Model):
         # h_drop1 = tf.nn.dropout(h1, dropout_rate)
         # h_drop2 = tf.nn.dropout(h2, dropout_rate)
 
+
+
         v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+
+        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
 
         return tf.matmul(v, U) + b
         # y1 = tf.matmul(h_drop1, U) + b
         # y2 = tf.matmul(h_drop2, U) + b
 
-        self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
+        
 
         if self.config.distance_measure == "l2":
             distance = norm(h1 - h2 + 0.000001)
@@ -237,10 +241,11 @@ class SimilarityModel(Model):
         """
         ### YOUR CODE HERE (~2-4 lines)
         # loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
-        # loss += self.config.regularization_constant * self.regularization_term
+        
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        loss += self.config.regularization_constant * self.regularization_term
         ### END YOUR CODE
-        return loss
+        return loss 
 
     def add_training_op(self, loss):
         """Sets up the training Ops.

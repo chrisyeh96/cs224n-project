@@ -208,7 +208,7 @@ class SimilarityModel(Model):
 
         v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
 
-        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.square(U))) + tf.reduce_sum(tf.square(b))
+        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
 
         return tf.matmul(v, U) + b
         # y1 = tf.matmul(h_drop1, U) + b

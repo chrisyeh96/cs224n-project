@@ -198,13 +198,17 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
-        U = tf.get_variable("U", (self.config.hidden_size, self.config.output_size), tf.float32, tf.contrib.layers.xavier_initializer())
-        b = tf.get_variable("b", (self.config.output_size,), tf.float32, tf.constant_initializer(0))
+        U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+        b = tf.get_variable("b", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
-        h_drop1 = tf.nn.dropout(h1, dropout_rate)
-        h_drop2 = tf.nn.dropout(h2, dropout_rate)
-        y1 = tf.matmul(h_drop1, U) + b
-        y2 = tf.matmul(h_drop2, U) + b
+        # h_drop1 = tf.nn.dropout(h1, dropout_rate)
+        # h_drop2 = tf.nn.dropout(h2, dropout_rate)
+
+        v = tf.nn.relu(tf.concatenate(h_1, h_2, h_1 - h_2, h_1 * h_2))
+
+        return tf.matmul(v, U) + b
+        # y1 = tf.matmul(h_drop1, U) + b
+        # y2 = tf.matmul(h_drop2, U) + b
 
         self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
 
@@ -232,9 +236,9 @@ class SimilarityModel(Model):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
-        loss += self.config.regularization_constant * self.regularization_term
-        # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        # loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
+        # loss += self.config.regularization_constant * self.regularization_term
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         ### END YOUR CODE
         return loss
 

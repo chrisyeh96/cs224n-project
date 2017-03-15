@@ -9,7 +9,7 @@ try:
 except:
    import pickle
 
-DEFAULT_FILE_PATH = "../data/glove/glove.6B.200d.txt"
+DEFAULT_FILE_PATH = "../data/glove/glove.6B.300d.txt"
 MAX_ROWS = 70000 # limit our memory usage
 
 def convert_to_numpy(glove_text_path, out_dir):

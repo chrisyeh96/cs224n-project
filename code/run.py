@@ -8,8 +8,8 @@ import argparse
 
 TRAIN_DATA_PATH = "../data/quora/train.tsv"
 TEST_DATA_PATH = "../data/quora/test.tsv"
-GLOVE_VECTORS_PATH = "../data/glove/glove.6B.200d.npy"
-TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.200d.pkl"
+GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"
+TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.300d.pkl"
 MAX_LENGTH_PATH = "../data/quora/max_length.pkl"
 
 class Config:

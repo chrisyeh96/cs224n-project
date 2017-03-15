@@ -198,7 +198,7 @@ class SimilarityModel(Model):
         logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
-        U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+        U = tf.get_variable("U", (6 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
         b = tf.get_variable("b", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
         # h_drop1 = tf.nn.dropout(h1, dropout_rate)
@@ -206,9 +206,9 @@ class SimilarityModel(Model):
 
 
 
-        v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+        v = tf.nn.relu(tf.concat(1, [h1, h2, h1 / h2, h2 / h1, tf.square(h1 - h2), h1 * h2]))
 
-        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
+        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.square(U))) + tf.reduce_sum(tf.square(b))
 
         return tf.matmul(v, U) + b
         # y1 = tf.matmul(h_drop1, U) + b

@@ -204,7 +204,7 @@ class SimilarityModel(Model):
         # h_drop1 = tf.nn.dropout(h1, dropout_rate)
         # h_drop2 = tf.nn.dropout(h2, dropout_rate)
 
-        v = tf.nn.relu(tf.concat(h1, h2, h1 - h2, h1 * h2))
+        v = tf.nn.relu(tf.concat([h1, h2, h1 - h2, h1 * h2], axis = 1))
 
         return tf.matmul(v, U) + b
         # y1 = tf.matmul(h_drop1, U) + b

@@ -297,12 +297,13 @@ class SimilarityModel(Model):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
+            preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
+
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-
             for i in range(preds_.shape[0]):
-                if preds_[i] == 1:
+                if preds_ > preds_:
                     if labels_batch[i] == 1:
                         tp += 1.0
                     else:

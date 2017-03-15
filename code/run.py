@@ -22,7 +22,7 @@ class Config:
     # each word just indexes into glove vectors
     dropout = 0.5
     # word vector dimensions
-    embed_size = 50
+    embed_size = 300
     hidden_size = 100
     output_size = 50
     batch_size = 1024

@@ -25,14 +25,14 @@ class Config:
     embed_size = 50
     hidden_size = 100
     output_size = 50
-    batch_size = 2048
-    n_epochs = 20
+    batch_size = 512
+    n_epochs = 15
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
 
     distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
-    cell = "rnn" # one of ["rnn", "gru"]
+    cell = "gru" # one of ["rnn", "gru"]
     regularization_constant = 0.0001
 
 def normalize(word):

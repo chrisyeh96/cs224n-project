@@ -221,8 +221,8 @@ if __name__ == "__main__":
                 session.run(init)
                 best_accuracy, best_f1 = model.fit(session, saver, train, dev)
 
-            accuracy_results.append((ml, best_accuracy))
-            f1_results.append((ml, best_f1))
+            accuracy_results.append((hs, best_accuracy))
+            f1_results.append((hs, best_f1))
 
             print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
 

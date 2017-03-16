@@ -189,26 +189,39 @@ if __name__ == "__main__":
     if args.max_length is not None:
         config.max_length = args.max_length
 
-    print("Preparing data...")
-    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
-    # helper.max_length = config.max_length
+    for ml in (5, 10, 15, 20, 25, 30, 35, 40):
 
-    print("Load embeddings...")
-    embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
-    config.embed_size = embeddings.shape[1]
+        accuracy_results = []
+        f1_results = []
 
-    # append unknown word and padding word vectors
-    helper.add_additional_embeddings(embeddings)
+        print("Preparing data...")
+        helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
+        # helper.max_length = config.max_length
 
-    with tf.Graph().as_default():
-        print("Building model...")
-        start = time.time()
-        model = SimilarityModel(helper, config, embeddings)
-        print("took %.2f seconds" % (time.time() - start))
+        print("Load embeddings...")
+        embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
+        config.embed_size = embeddings.shape[1]
 
-        init = tf.global_variables_initializer()
-        saver = None
+        # append unknown word and padding word vectors
+        helper.add_additional_embeddings(embeddings)
 
-        with tf.Session() as session:
-            session.run(init)
-            model.fit(session, saver, train, dev)
+        with tf.Graph().as_default():
+            print("Building model...")
+            start = time.time()
+            model = SimilarityModel(helper, config, embeddings)
+            print("took %.2f seconds" % (time.time() - start))
+
+            init = tf.global_variables_initializer()
+            saver = None
+
+            with tf.Session() as session:
+                session.run(init)
+                best_accuracy, best_f1 = model.fit(session, saver, train, dev)
+
+            accuracy_results.append((ml, best_accuracy))
+            f1_results.append((ml, best_f1))
+
+    print("accuracy results:")
+    print(accuracy_results)
+    print("f1 results:")
+    print(f1_results)

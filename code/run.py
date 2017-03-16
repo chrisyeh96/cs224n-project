@@ -30,7 +30,7 @@ class Config:
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
-    max_length = 25
+    max_length = 30
 
     distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
     cell = "gru" # one of ["rnn", "gru"]
@@ -189,13 +189,13 @@ if __name__ == "__main__":
     if args.max_length is not None:
         config.max_length = args.max_length
 
-    for ml in (30, 35, 40):
+    accuracy_results = []
+    f1_results = []
 
-        print("Max length is %d" % ml)
-        config.max_length = ml
+    for hs in (50, 100, 150, 200, 250):
 
-        accuracy_results = []
-        f1_results = []
+        print("hidden size is %d" % hs)
+        config.hidden_size = hs
 
         print("Preparing data...")
         helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)

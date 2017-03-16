@@ -224,6 +224,8 @@ if __name__ == "__main__":
             accuracy_results.append((ml, best_accuracy))
             f1_results.append((ml, best_f1))
 
+            print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
+
     print("accuracy results:")
     print(accuracy_results)
     print("f1 results:")

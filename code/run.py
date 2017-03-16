@@ -6,10 +6,10 @@ import sys, os, time, pickle
 from similarity_model import SimilarityModel
 import argparse
 
-TRAIN_DATA_PATH = "../data/quora/train.tsv"
-TEST_DATA_PATH = "../data/quora/test.tsv"
+DATA_PATH = "../data/quora/tokenized_data.tsv"
+DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"
-TOKENS_TO_INDEX_PATH = "../data/glove/glove.6B.300d.pkl"
+TOKENS_TO_GLOVEID_PATH = "../data/glove/glove.6B.300d.pkl"
 MAX_LENGTH_PATH = "../data/quora/max_length.pkl"
 
 class Config:
@@ -50,9 +50,9 @@ def read_datafile(fstream):
         QUESTION2
         LABEL
         ...
-    where QUESTION1 and QUESTION2 are tab-delimited strings, and LABEL is an int.
+    where QUESTION1 and QUESTION2 are space-delimited strings, and LABEL is an int.
 
-    @returns a list of examples [([sentence1, sentence2], label)].
+    @returns a list of examples [(sentence1, sentence2, label)].
         @sentence1 and @sentence2 are lists of strings, @label is a boolean
     """
     examples = []
@@ -61,36 +61,41 @@ def read_datafile(fstream):
     for line_num, line in enumerate(fstream):
         line = line.strip()
         if line_num % 3 == 0:
-            sentence1 = line.split("\t")
+            sentence1 = line.split()
         elif line_num % 3 == 1:
-            sentence2 = line.split("\t")
+            sentence2 = line.split()
         else:
             label = int(line)
             examples.append((sentence1, sentence2, label))
 
     return examples
 
-def load_and_preprocess_data(train_file_path, dev_file_path, tokens_to_glove_index_path, max_length_path):
+def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_gloveID_path, max_length_path):
     """
     Reads the training and dev data sets from the given paths.
     TODO: should we have train/validation/test split instead of just train/dev?
     """
-    print("Loading training data...")
-    with open(train_file_path) as train_file:
-        train = read_datafile(train_file)
-    print("Done. Read %d sentences" % len(train))
-    print("Loading dev data...")
-    with open(dev_file_path) as dev_file:
-        dev = read_datafile(dev_file)
-    print("Done. Read %d sentences"% len(dev))
+    print("Loading all data...")
+    with open(data_path, 'r') as data_file:
+        data = read_datafile(data_file)
+    print("Done. Read %d sentences" % len(data))
 
     # now process all the input data: turn words into the glove indices
     print("Converting words into glove vector indices...")
-    helper = ModelHelper.load(tokens_to_glove_index_path, max_length_path)
-    train_data = helper.vectorize(train)
-    dev_data = helper.vectorize(dev)
+    helper = ModelHelper.load(tokens_to_gloveID_path, max_length_path)
+    data_vectorized = helper.vectorize(data)
 
-    return helper, train_data, dev_data, train, dev
+    # split into train, dev, and test sets
+    with np.load(data_split_indices_path) as data_split_indices:
+        train_indices = data_split_indices['train']
+        dev_indices = data_split_indices['dev']
+        test_indices = data_split_indices['test']
+
+    train_data = [data_vectorized[i] for i in train_indices]
+    dev_data = [data_vectorized[i] for i in dev_indices]
+    test_data = [data_vectorized[i] for i in test_indices]
+
+    return helper, train_data, dev_data, test_data
 
 class ModelHelper(object):
     """
@@ -148,10 +153,10 @@ class ModelHelper(object):
         return [self.vectorize_example(example) for example in data]
 
     @classmethod
-    def load(cls, tokens_to_glove_index_path, max_length_path):
+    def load(cls, tokens_to_gloveID_path, max_length_path):
         # Make sure the directory exists.
-        assert os.path.exists(tokens_to_glove_index_path)
-        with open(tokens_to_glove_index_path, 'rb') as f:
+        assert os.path.exists(tokens_to_gloveID_path)
+        with open(tokens_to_gloveID_path, 'rb') as f:
             tok2id = pickle.load(f)
         with open(max_length_path, 'rb') as f:
             max_length = pickle.load(f)
@@ -178,8 +183,8 @@ if __name__ == "__main__":
         config.regularization_constant = args.reg_constant
 
     print("Preparing data...")
-    helper, train, dev, train_raw, dev_raw = load_and_preprocess_data(TRAIN_DATA_PATH, TEST_DATA_PATH, TOKENS_TO_INDEX_PATH, MAX_LENGTH_PATH)
-    
+    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, MAX_LENGTH_PATH)
+
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
     config.embed_size = embeddings.shape[1]
@@ -199,4 +204,3 @@ if __name__ == "__main__":
         with tf.Session() as session:
             session.run(init)
             model.fit(session, saver, train, dev)
-

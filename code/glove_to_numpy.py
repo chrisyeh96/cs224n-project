@@ -1,13 +1,9 @@
 import numpy as np
 import argparse
+import pickle
 import os
 from fnmatch import fnmatch
 from numpy.lib.format import open_memmap
-
-try:
-   import cPickle as pickle # cPickle is way faster than pickle
-except:
-   import pickle
 
 DEFAULT_FILE_PATH = "../data/glove/glove.6B.300d.txt"
 MAX_ROWS = 70000 # limit our memory usage

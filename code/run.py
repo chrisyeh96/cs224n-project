@@ -171,8 +171,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef"], help="distance measure")
     parser.add_argument("-r", "--reg_constant", type=float, required=False, help="regularization constant")
-    parser.add_argument("-h", "--hidden_size", type=int, required=False, help="neural net hidden size")
-    parser.add_argument("-m", "--max_length", type=int, required=False, help="maximum length of sentences")
+    parser.add_argument("-hs", "--hidden_size", type=int, required=False, help="neural net hidden size")
+    parser.add_argument("-ml", "--max_length", type=int, required=False, help="maximum length of sentences")
     args = parser.parse_args()
 
     config = Config()

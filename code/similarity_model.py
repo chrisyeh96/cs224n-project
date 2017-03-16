@@ -376,6 +376,7 @@ class SimilarityModel(Model):
             best training loss over the self.config.n_epochs of training
         """
         best_score = 0.
+        best_f1 = 0.
 
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
@@ -389,9 +390,12 @@ class SimilarityModel(Model):
                 best_score = score
                 print("New best score: %f" % best_score)
 
+            if f1 > best_f1:
+                best_f1 = f1
+
             print("Precision: %f" % precision)
             print("Recall: %f" % recall)
             print("F1 Score: %f" % f1)
 
             print("")
-        return best_score
+        return best_score, best_f1

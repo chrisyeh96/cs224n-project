@@ -30,6 +30,7 @@ class Config:
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
+    max_length = 25
 
     distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
     cell = "gru" # one of ["rnn", "gru"]
@@ -170,6 +171,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef"], help="distance measure")
     parser.add_argument("-r", "--reg_constant", type=float, required=False, help="regularization constant")
+    parser.add_argument("-h", "--hidden_size", type=float, required=False, help="neural net hidden size")
+    parser.add_argument("-m", "--max_length", type=float, required=False, help="maximum length of sentences")
     args = parser.parse_args()
 
     config = Config()
@@ -181,9 +184,14 @@ if __name__ == "__main__":
         config.distance_measure = args.distance_measure
     if args.reg_constant is not None:
         config.regularization_constant = args.reg_constant
+    if args.hidden_size is not None:
+        config.hidden_size = args.hidden_size
+    if args.max_length is not None:
+        config.max_length = args.max_length
 
     print("Preparing data...")
     helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, MAX_LENGTH_PATH)
+    helper.max_length = config.max_length
 
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')

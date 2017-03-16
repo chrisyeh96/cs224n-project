@@ -154,13 +154,13 @@ class ModelHelper(object):
         return [self.vectorize_example(example) for example in data]
 
     @classmethod
-    def load(cls, tokens_to_gloveID_path, max_length_path):
+    def load(cls, tokens_to_gloveID_path, max_length):
         # Make sure the directory exists.
         assert os.path.exists(tokens_to_gloveID_path)
         with open(tokens_to_gloveID_path, 'rb') as f:
             tok2id = pickle.load(f)
-        with open(max_length_path, 'rb') as f:
-            max_length = pickle.load(f)
+        # with open(max_length_path, 'rb') as f:
+            # max_length = pickle.load(f)
         return cls(tok2id, max_length)
 
 

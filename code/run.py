@@ -191,6 +191,9 @@ if __name__ == "__main__":
 
     for ml in (5, 10, 15, 20, 25, 30, 35, 40):
 
+        print("Max length is %d" % ml)
+        config.max_length = ml
+
         accuracy_results = []
         f1_results = []
 

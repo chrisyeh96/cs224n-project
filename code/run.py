@@ -189,7 +189,7 @@ if __name__ == "__main__":
     if args.max_length is not None:
         config.max_length = args.max_length
 
-    for ml in (5, 10, 15, 20, 25, 30, 35, 40):
+    for ml in (30, 35, 40):
 
         print("Max length is %d" % ml)
         config.max_length = ml

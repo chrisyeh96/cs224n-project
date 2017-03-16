@@ -71,7 +71,7 @@ def read_datafile(fstream):
 
     return examples
 
-def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_gloveID_path, max_length_path):
+def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_gloveID_path, max_length):
     """
     Reads the training and dev data sets from the given paths.
     TODO: should we have train/validation/test split instead of just train/dev?
@@ -83,7 +83,7 @@ def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_glove
 
     # now process all the input data: turn words into the glove indices
     print("Converting words into glove vector indices...")
-    helper = ModelHelper.load(tokens_to_gloveID_path, max_length_path)
+    helper = ModelHelper.load(tokens_to_gloveID_path, max_length)
     data_vectorized = helper.vectorize(data)
 
     # split into train, dev, and test sets
@@ -109,8 +109,8 @@ class ModelHelper(object):
         # TODO: If we can have different amounts of padding for training vs. testing data,
         # then we can just compute the max_length in the vectorize functions.
         # Otherwise, we should load in max_length from some saved PKL file
-        # self.max_length = max_length
-        self.max_length = 25 # TODO make constant or sth
+        self.max_length = max_length
+        # self.max_length = 25 # TODO make constant or sth
 
     # add additional embeddings for unknown word and padding word 
     def add_additional_embeddings(self, embeddings):
@@ -190,8 +190,8 @@ if __name__ == "__main__":
         config.max_length = args.max_length
 
     print("Preparing data...")
-    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, MAX_LENGTH_PATH)
-    helper.max_length = config.max_length
+    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
+    # helper.max_length = config.max_length
 
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')

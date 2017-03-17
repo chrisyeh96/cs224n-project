@@ -206,11 +206,11 @@ class SimilarityModel(Model):
 
 
         # FOLLOWING 3 LINES FOR SYC MODEL
-        v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+        # v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+        # self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
+        # return tf.matmul(v, U) + b
 
-        self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
 
-        return tf.matmul(v, U) + b
         # y1 = tf.matmul(h_drop1, U) + b
         # y2 = tf.matmul(h_drop2, U) + b
 
@@ -242,9 +242,9 @@ class SimilarityModel(Model):
         ### YOUR CODE HERE (~2-4 lines)
 
         # BASE MODELS
-        # loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
+        loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
         # SYC MODEL
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         loss += self.config.regularization_constant * self.regularization_term
         ### END YOUR CODE
         return loss 

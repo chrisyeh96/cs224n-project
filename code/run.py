@@ -189,6 +189,17 @@ if __name__ == "__main__":
     if args.max_length is not None:
         config.max_length = args.max_length
 
+
+    print("Preparing data...")
+    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
+
+    print("Load embeddings...")
+    embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
+    config.embed_size = embeddings.shape[1]
+
+    # append unknown word and padding word vectors
+    helper.add_additional_embeddings(embeddings)
+
     with tf.Graph().as_default():
         print("Building model...")
         start = time.time()

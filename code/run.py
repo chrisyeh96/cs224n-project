@@ -23,7 +23,7 @@ class Config:
     dropout = 0.5
     # word vector dimensions
     embed_size = 300
-    hidden_size = 100
+    hidden_size = 250
     output_size = 50
     batch_size = 1024
     n_epochs = 10
@@ -189,44 +189,58 @@ if __name__ == "__main__":
     if args.max_length is not None:
         config.max_length = args.max_length
 
-    accuracy_results = []
-    f1_results = []
+    with tf.Graph().as_default():
+        print("Building model...")
+        start = time.time()
+        model = SimilarityModel(helper, config, embeddings)
+        print("took %.2f seconds" % (time.time() - start))
 
-    for hs in (300, 350):
+        init = tf.global_variables_initializer()
+        saver = None
 
-        print("hidden size is %d" % hs)
-        config.hidden_size = hs
+        with tf.Session() as session:
+            session.run(init)
+            best_accuracy, best_f1 = model.fit(session, saver, train, dev)
 
-        print("Preparing data...")
-        helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
-        # helper.max_length = config.max_length
 
-        print("Load embeddings...")
-        embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
-        config.embed_size = embeddings.shape[1]
+    # accuracy_results = []
+    # f1_results = []
 
-        # append unknown word and padding word vectors
-        helper.add_additional_embeddings(embeddings)
+    # for hs in (300, 350):
 
-        with tf.Graph().as_default():
-            print("Building model...")
-            start = time.time()
-            model = SimilarityModel(helper, config, embeddings)
-            print("took %.2f seconds" % (time.time() - start))
+    #     print("hidden size is %d" % hs)
+    #     config.hidden_size = hs
 
-            init = tf.global_variables_initializer()
-            saver = None
+    #     print("Preparing data...")
+    #     helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
+    #     # helper.max_length = config.max_length
 
-            with tf.Session() as session:
-                session.run(init)
-                best_accuracy, best_f1 = model.fit(session, saver, train, dev)
+    #     print("Load embeddings...")
+    #     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
+    #     config.embed_size = embeddings.shape[1]
 
-            accuracy_results.append((hs, best_accuracy))
-            f1_results.append((hs, best_f1))
+    #     # append unknown word and padding word vectors
+    #     helper.add_additional_embeddings(embeddings)
 
-            print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
+    #     with tf.Graph().as_default():
+    #         print("Building model...")
+    #         start = time.time()
+    #         model = SimilarityModel(helper, config, embeddings)
+    #         print("took %.2f seconds" % (time.time() - start))
 
-    print("accuracy results:")
-    print(accuracy_results)
-    print("f1 results:")
-    print(f1_results)
+    #         init = tf.global_variables_initializer()
+    #         saver = None
+
+    #         with tf.Session() as session:
+    #             session.run(init)
+    #             best_accuracy, best_f1 = model.fit(session, saver, train, dev)
+
+    #         accuracy_results.append((hs, best_accuracy))
+    #         f1_results.append((hs, best_f1))
+
+    #         print("best accuracy: %f, f1: %f" % (best_accuracy, best_f1))
+
+    # print("accuracy results:")
+    # print(accuracy_results)
+    # print("f1 results:")
+    # print(f1_results)

@@ -192,7 +192,7 @@ if __name__ == "__main__":
     accuracy_results = []
     f1_results = []
 
-    for hs in (50, 100, 150, 200, 250):
+    for hs in (300, 350):
 
         print("hidden size is %d" % hs)
         config.hidden_size = hs

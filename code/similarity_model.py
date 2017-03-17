@@ -306,7 +306,8 @@ class SimilarityModel(Model):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
-            preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
+            # ONLY FOR SYC MODEL
+            # preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
 
             preds += list(preds_)
             labels_batch = np.array(labels_batch)

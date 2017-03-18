@@ -6,6 +6,7 @@ from rnn_cell import RNNCell
 from gru_cell import GRUCell
 from util import Progbar, minibatches, cosine_distance, norm
 import numpy as np
+import os
 import pdb
 
 class SimilarityModel(Model):
@@ -394,10 +395,13 @@ class SimilarityModel(Model):
                 best_score = score
                 f1_for_best_score = f1
                 if saver is not None:
+                    checkpoint_dir = "../saved_ckpts/"
+                    if not os.path.exists(checkpoint_dir):
+                        os.makedirs(checkpoint_dir)
                     filename = "model_b_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.ckpt" % (self.config.batch_size,
                         self.config.cell, self.config.distance_measure, self.config.regularization_constant,
                         self.config.hidden_size, self.config.max_length)
-                    save_path = saver.save(sess, "./saved_ckpts/%s" % filename)
+                    save_path = saver.save(sess, os.path.join(checkpoint_dir, filename))
                     print("Model saved in file: %s" % save_path)
 
             print('Accuracy: %f' % score)

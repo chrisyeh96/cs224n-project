@@ -173,6 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--reg_constant", type=float, required=False, help="regularization constant")
     parser.add_argument("-hs", "--hidden_size", type=int, required=False, help="neural net hidden size")
     parser.add_argument("-ml", "--max_length", type=int, required=False, help="maximum length of sentences")
+    parser.add_argument("-s", "--save_params", action="store_true", help="save trained variables to a checkpoint file")
     args = parser.parse_args()
 
     config = Config()
@@ -207,7 +208,9 @@ if __name__ == "__main__":
         print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
+        saver = None
+        if args.save_params is not None:
+            saver = tf.train.Saver()
 
         with tf.Session() as session:
             session.run(init)

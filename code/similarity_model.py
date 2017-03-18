@@ -195,7 +195,7 @@ class SimilarityModel(Model):
                 o2_t, h2 = cell(x2[:, time_step, :], h2, scope)
 
         # scalar variables
-        logistic_a = tf.Variable(0.0, dtype=tf.float32, name="logistic_a")
+        logistic_a = tf.Variable(1.0, dtype=tf.float32, name="logistic_a")
         logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
 
         U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
@@ -222,8 +222,6 @@ class SimilarityModel(Model):
         elif self.config.distance_measure == "cosine":
             distance = cosine_distance(h1 + 0.000001, h2 + 0.000001)
             self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
-            preds = (distance + 1.0) / 2.0
-            return preds
         elif self.config.distance_measure == "custom_coef":
             self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)

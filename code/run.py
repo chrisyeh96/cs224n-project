@@ -7,7 +7,8 @@ from similarity_model import SimilarityModel
 import argparse
 
 DATA_PATH = "../data/quora/tokenized_data.tsv"
-DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
+# DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
+DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices_ibm.npz"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"
 TOKENS_TO_GLOVEID_PATH = "../data/glove/glove.6B.300d.pkl"
 MAX_LENGTH_PATH = "../data/quora/max_length.pkl"

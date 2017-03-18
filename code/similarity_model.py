@@ -230,8 +230,8 @@ class SimilarityModel(Model):
 
         elif self.config.distance_measure == "concat_steroids":
             # use softmax for prediction
-            U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            b = tf.get_variable("b", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+            U = tf.get_variable("U", (4 * self.config.hidden_size, 4 * self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b = tf.get_variable("b", (4 * self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
             W = tf.get_variable("W", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
             c = tf.get_variable("c", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))

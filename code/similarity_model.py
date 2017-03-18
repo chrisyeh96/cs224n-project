@@ -247,7 +247,7 @@ class SimilarityModel(Model):
             v3 = tf.nn.relu(tf.matmul(x, W2) + b2)
             v4 = tf.nn.relu(tf.matmul(x, W3) + b3)
 
-            self.regularization_term = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(b1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(b2)) 
+            self.regularization_term = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(b1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(b2)) \
                     + tf.reduce_sum(tf.square(W3)) + tf.reduce_sum(tf.square(b3)) + tf.reduce_sum(tf.square(W4)) + tf.reduce_sum(tf.square(b4)) 
             preds = tf.matmul(v4, W4) + b4
 

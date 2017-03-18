@@ -163,10 +163,10 @@ class ModelHelper(object):
             # max_length = pickle.load(f)
         return cls(tok2id, max_length)
 
-def print_options(args):
+def print_options(args, config):
     print("Running with options:")
     for key, value in vars(args).iteritems():
-        print("\t%s:\t%s" % (key, value))
+        print("\t%s:\t\t\t%s" % (key, value if value is not None else getattr(config, value)))
 
 if __name__ == "__main__":
     description = "Run the similarity_model"
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         model = SimilarityModel(helper, config, embeddings)
         print("took %.2f seconds" % (time.time() - start))
 
-        print_options(args)
+        print_options(args, config)
 
         init = tf.global_variables_initializer()
         saver = None
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
         with tf.Session() as session:
             session.run(init)
-            best_accuracy, best_f1 = model.fit(session, saver, train, dev)
+            best_accuracy, best_f1 = model.fit(session, saver, train, test)
             print("best accuracy: %f, best f1: %f" % (best_accuracy, best_f1))
 
 

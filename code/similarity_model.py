@@ -230,20 +230,24 @@ class SimilarityModel(Model):
 
         elif self.config.distance_measure == "concat_steroids":
             # use softmax for prediction
-            U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            b = tf.get_variable("b", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+            W1 = tf.get_variable("W1", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b1 = tf.get_variable("b1", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
-            V = tf.get_variable("V", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            d = tf.get_variable("d", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+            W2 = tf.get_variable("W2", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b2 = tf.get_variable("b2", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
-            W = tf.get_variable("W", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
-            c = tf.get_variable("c", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
+            W3 = tf.get_variable("W3", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b3 = tf.get_variable("b3", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
-            v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
-            x = tf.nn.relu(tf.matmul(v, U) + b)
-            z = tf.nn.relu(tf.matmul(x, V) + d)
+            W4 = tf.get_variable("W4", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+            b4 = tf.get_variable("b4", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
+
+            v1 = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+            v2 = tf.nn.relu(tf.matmul(v, W1) + b1)
+            v3 = tf.nn.relu(tf.matmul(x, W2) + b2)
+            v4 = tf.nn.relu(tf.matmul(x, W3) + b3)
             self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b)) + tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(c)) + tf.reduce_sum(tf.square(V)) + tf.reduce_sum(tf.square(d))
-            preds = tf.matmul(z, W) + c
+            preds = tf.matmul(v4, W4) + b4
 
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
@@ -358,7 +362,7 @@ class SimilarityModel(Model):
             end = min(i * batch_size + batch_size, num_examples)
             yield (sent1[start:end], sent2[start:end], labels[start:end])
 
-    def run_epoch(self, sess, train_examples, dev_set):
+    def run_epoch(self, sess, train_examples, dev_set, test_set):
         """
         Args:
             sess: TFSession
@@ -378,13 +382,14 @@ class SimilarityModel(Model):
             prog.update(i+1, [("train loss", loss)])
         print("")
 
-        accuracy, precision, recall, f1 = self.evaluate(sess, dev_set)
-        return accuracy, precision, recall, f1
+        accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
+        accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
+        return (accuracy_dev, precision_dev, recall_dev, f1_dev), (accuracy_test, precision_test, recall_test, f1_test)
 
     def preprocess_sequence_data(self, examples):
         return zip(*examples)
 
-    def fit(self, sess, saver, train_examples_raw, dev_set_raw):
+    def fit(self, sess, saver, train_examples_raw, dev_set_raw, test_set_raw):
         """
         Args:
             sess: TFSession
@@ -402,15 +407,19 @@ class SimilarityModel(Model):
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
+        test_set = self.preprocess_sequence_data(test_set_raw)
 
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
-            score, precision, recall, f1 = self.run_epoch(sess, train_examples, dev_set)
+            dev_results, test_results = self.run_epoch(sess, train_examples, dev_set, test_set)
+            score_dev, precision_dev, recall_dev, f1_dev = dev_results
+            score_test, precision_test, recall_test, f1_test = test_results
+
 
             if score > best_score:
                 print("New best accuracy!!")
-                best_score = score
-                f1_for_best_score = f1
+                best_score = score_dev
+                f1_for_best_score = f1_dev
                 if saver is not None:
                     checkpoint_dir = "../saved_ckpts/"
                     if not os.path.exists(checkpoint_dir):
@@ -421,10 +430,16 @@ class SimilarityModel(Model):
                     save_path = saver.save(sess, os.path.join(checkpoint_dir, filename))
                     print("Model saved in file: %s" % save_path)
 
-            print('Accuracy: %f' % score)
-            print("Precision: %f" % precision)
-            print("Recall: %f" % recall)
-            print("F1 Score: %f" % f1)
+            print('Dev Accuracy: %f' % score_dev)
+            print("Dev Precision: %f" % precision_dev)
+            print("Dev Recall: %f" % recall_dev)
+            print("Dev F1 Score: %f" % f1_dev)
+            print('')
+
+            print('Test Accuracy: %f' % score_test)
+            print("Test Precision: %f" % precision_test)
+            print("Test Recall: %f" % recall_test)
+            print("Test F1 Score: %f" % f1_test)
 
             print("")
         return best_score, f1_for_best_score

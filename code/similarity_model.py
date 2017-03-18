@@ -175,9 +175,6 @@ class SimilarityModel(Model):
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
-        # Define U and b2 as variables.
-        # ONLY FOR LSTM!
-
         # Initialize hidden states to zero vectors of shape (num_examples, hidden_size)
         h1 = tf.zeros((tf.shape(x1)[0], self.config.hidden_size), tf.float32)
         h2 = tf.zeros((tf.shape(x2)[0], self.config.hidden_size), tf.float32)
@@ -194,43 +191,45 @@ class SimilarityModel(Model):
 
                 o2_t, h2 = cell(x2[:, time_step, :], h2, scope)
 
-        # scalar variables
-        logistic_a = tf.Variable(1.0, dtype=tf.float32, name="logistic_a")
-        logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
-
-        U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
-        b = tf.get_variable("b", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
-
         # h_drop1 = tf.nn.dropout(h1, dropout_rate)
-        # h_drop2 = tf.nn.dropout(h2, dropout_rate)
-
-
-        # FOLLOWING 3 LINES FOR SYC MODEL
-        # v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
-        # self.regularization_term = tf.reduce_sum(tf.reduce_sum(tf.abs(U))) + tf.reduce_sum(tf.abs(b))
-        # return tf.matmul(v, U) + b
-
-
-        # y1 = tf.matmul(h_drop1, U) + b
-        # y2 = tf.matmul(h_drop2, U) + b
-
+        # h_drop2 = tf.nn.dropout(h2, dropout_rate)        
         
+        # use L2-regularization: sum of squares of all parameters
 
         if self.config.distance_measure == "l2":
-            distance = norm(h1 - h2 + 0.000001)
-            self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
+            # perform logistic regression on l2-distance between h1 and h2
+            distance = norm(h1 - h2 + 0.000001, norm_type="row_L2")
+            logistic_a = tf.Variable(1.0, dtype=tf.float32, name="logistic_a")
+            logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
+            self.regularization_term = tf.square(logistic_a) + tf.square(logistic_b)
+            preds = tf.sigmoid(logistic_a * distance + logistic_b)
+
         elif self.config.distance_measure == "cosine":
+            # perform logistic regression on cosine distance between h1 and h2
             distance = cosine_distance(h1 + 0.000001, h2 + 0.000001)
-            self.regularization_term = tf.abs(logistic_a) + tf.abs(logistic_b)
+            logistic_a = tf.Variable(1.0, dtype=tf.float32, name="logistic_a")
+            logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
+            self.regularization_term = tf.square(logistic_a) + tf.square(logistic_b)
+            preds = tf.sigmoid(logistic_a * distance + logistic_b)
+
         elif self.config.distance_measure == "custom_coef":
-            self.coefficients = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
-            distance = tf.reduce_sum(self.coefficients * tf.square(h1 - h2 + 0.000001), axis=1)
-            logistic_a = tf.constant(1.0)
-            self.regularization_term = tf.abs(tf.reduce_sum(self.coefficients)) + tf.abs(logistic_b)
+            # perform logistic regression on abs(h1-h2)
+            logistic_a = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
+            logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
+            self.regularization_term = tf.reduce_sum(tf.square(logistic_a)) + tf.square(logistic_b)
+            preds = tf.sigmoid(tf.reduce_sum(logistic_a * tf.abs(h1 - h2), axis=1) + logistic_b)
+
+        elif self.config.distance_measure == "concat":
+            # use softmax for prediction
+            U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+            b = tf.get_variable("b", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
+            v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+            self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b))
+            preds = tf.matmul(v, U) + b
+
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         
-        preds = tf.sigmoid(logistic_a * distance + logistic_b)
         return preds
 
     def add_loss_op(self, preds):
@@ -241,14 +240,13 @@ class SimilarityModel(Model):
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        ### YOUR CODE HERE (~2-4 lines)
+        if self.config.distance_measure == "concat": # Concatenated model
+            loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        else: # BASE MODELS
+            loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
 
-        # BASE MODELS
-        loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))
-        # SYC MODEL
-        # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
+        # add regularization term
         loss += self.config.regularization_constant * self.regularization_term
-        ### END YOUR CODE
         return loss 
 
     def add_training_op(self, loss):
@@ -270,9 +268,7 @@ class SimilarityModel(Model):
         Returns:
             train_op: The Op for training.
         """
-        ### YOUR CODE HERE (~1-2 lines)
         self.train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
-        ### END YOUR CODE
         return self.train_op
 
     # rounds predictions to 0, 1
@@ -305,9 +301,10 @@ class SimilarityModel(Model):
         for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
-            preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
-            # ONLY FOR SYC MODEL
-            # preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
+            if self.config.distance_measure == "concat":
+                preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
+            else: # BASE MODELS
+                preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
 
             preds += list(preds_)
             labels_batch = np.array(labels_batch)

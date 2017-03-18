@@ -317,7 +317,7 @@ class SimilarityModel(Model):
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
 
-            if self.config.distance_measure == "concat":
+            if self.config.distance_measure == "concat" or self.config.distance_measure == "concat_steroids":
                 preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
 
             preds += list(preds_)

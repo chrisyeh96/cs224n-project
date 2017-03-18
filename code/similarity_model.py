@@ -233,12 +233,16 @@ class SimilarityModel(Model):
             U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
             b = tf.get_variable("b", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
+            V = tf.get_variable("V", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            d = tf.get_variable("d", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+
             W = tf.get_variable("W", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
             c = tf.get_variable("c", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
             v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
-            z = tf.nn.relu(tf.matmul(v, U) + b)
-            self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b)) + tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(c))
+            x = tf.nn.relu(tf.matmul(v, U) + b)
+            z = tf.nn.relu(tf.matmul(x, V) + d)
+            self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b)) + tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(c)) + tf.reduce_sum(tf.square(V)) + tf.reduce_sum(tf.square(d))
             preds = tf.matmul(z, W) + c
 
         else:

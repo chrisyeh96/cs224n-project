@@ -198,7 +198,7 @@ class SimilarityModel(Model):
 
         if self.config.distance_measure == "l2":
             # perform logistic regression on l2-distance between h1 and h2
-            distance = norm(h1 - h2 + 0.000001, norm_type="row_L2")
+            distance = norm(h1 - h2 + 0.000001)
             logistic_a = tf.Variable(1.0, dtype=tf.float32, name="logistic_a")
             logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
             self.regularization_term = tf.square(logistic_a) + tf.square(logistic_b)

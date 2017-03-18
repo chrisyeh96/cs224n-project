@@ -21,18 +21,18 @@ class Config:
     """
     # each word just indexes into glove vectors
     dropout = 0.5
-    # word vector dimensions
-    embed_size = 300
-    hidden_size = 250
+    embed_size = 300 # word vector dimensions
     output_size = 50
-    batch_size = 1024
     n_epochs = 10
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
-    max_length = 30
 
-    distance_measure = "l2" # one of ["l2", "cosine", "custom_coef"]
+    # parameters that can be set from the command-line:
+    hidden_size = 250
+    batch_size = 1024
+    max_length = 30
+    distance_measure = "l2" # one of ["l2", "cosine", "custom_coef", "concat"]
     cell = "gru" # one of ["rnn", "gru"]
     regularization_constant = 0.0001
 

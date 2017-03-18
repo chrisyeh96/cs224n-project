@@ -230,10 +230,10 @@ class SimilarityModel(Model):
 
         elif self.config.distance_measure == "concat_steroids":
             # use softmax for prediction
-            U = tf.get_variable("U", (4 * self.config.hidden_size, 4 * self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            b = tf.get_variable("b", (4 * self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+            U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b = tf.get_variable("b", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
-            W = tf.get_variable("W", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+            W = tf.get_variable("W", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
             c = tf.get_variable("c", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
             v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
@@ -254,7 +254,7 @@ class SimilarityModel(Model):
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        if self.config.distance_measure == "concat": # Concatenated model
+        if self.config.distance_measure == "concat" or self.config.distance_measure == "concat_steroids": # Concatenated model
             loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder))
         else: # BASE MODELS
             loss = tf.reduce_mean(tf.square(preds - tf.to_float(self.labels_placeholder)))

@@ -207,7 +207,7 @@ if __name__ == "__main__":
         print("took %.2f seconds" % (time.time() - start))
 
         init = tf.global_variables_initializer()
-        saver = None
+        saver = tf.train.Saver()
 
         with tf.Session() as session:
             session.run(init)

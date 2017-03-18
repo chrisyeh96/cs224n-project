@@ -302,7 +302,7 @@ class SimilarityModel(Model):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
-            
+
             if self.config.distance_measure == "concat":
                 preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
 
@@ -370,7 +370,8 @@ class SimilarityModel(Model):
         """
         Args:
             sess: TFSession
-            saver: TODO
+            saver: tf.train.Saver, used to saves all variables after finding best model
+                set to None if you do not want to save the variables
             train_examples_raw: list of training examples, each example is a
                 tuple (s1, s2, label) where s1,s2 are padded/truncated sentences
             dev_set_raw: same as train_examples_raw, except for the dev set
@@ -378,7 +379,7 @@ class SimilarityModel(Model):
             best training loss over the self.config.n_epochs of training
         """
         best_score = 0.
-        best_f1 = 0.
+        f1_for_best_score = 0.
 
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
@@ -387,17 +388,22 @@ class SimilarityModel(Model):
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
             score, precision, recall, f1 = self.run_epoch(sess, train_examples, dev_set)
-            print('Score: ', score)
+
             if score > best_score:
+                print("New best accuracy!!")
                 best_score = score
-                print("New best score: %f" % best_score)
+                f1_for_best_score = f1
+                if saver is not None:
+                    filename = "model_b_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.ckpt" % (self.config.batch_size,
+                        self.config.cell, self.config.distance_measure, self.config.regularization_constant,
+                        self.config.hidden_size, self.config.max_length)
+                    save_path = saver.save(sess, "./saved_ckpts/%s" % filename)
+                    print("Model saved in file: %s" % save_path)
 
-            if f1 > best_f1:
-                best_f1 = f1
-
+            print('Accuracy: %f' % score)
             print("Precision: %f" % precision)
             print("Recall: %f" % recall)
             print("F1 Score: %f" % f1)
 
             print("")
-        return best_score, best_f1
+        return best_score, f1_for_best_score

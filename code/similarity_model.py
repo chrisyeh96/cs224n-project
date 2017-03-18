@@ -228,6 +228,19 @@ class SimilarityModel(Model):
             self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b))
             preds = tf.matmul(v, U) + b
 
+        elif self.config.distance_measure == "concat_steroids":
+            # use softmax for prediction
+            U = tf.get_variable("U", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
+            b = tf.get_variable("b", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
+
+            W = tf.get_variable("W", (4 * self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+            c = tf.get_variable("c", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
+
+            v = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
+            z = tf.nn.relu(tf.matmul(v, U) + b)
+            self.regularization_term = tf.reduce_sum(tf.square(U)) + tf.reduce_sum(tf.square(b)) + tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(c))
+            preds = tf.matmul(z, W) + c
+
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)
         

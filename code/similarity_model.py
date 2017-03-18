@@ -418,7 +418,7 @@ class SimilarityModel(Model):
             score_test, precision_test, recall_test, f1_test = test_results
 
 
-            if score > best_score:
+            if score_dev > best_score:
                 print("New best accuracy!!")
                 best_score = score_dev
                 f1_for_best_score = f1_dev

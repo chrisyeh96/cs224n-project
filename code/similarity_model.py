@@ -243,9 +243,9 @@ class SimilarityModel(Model):
             b4 = tf.get_variable("b4", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
             v1 = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
-            v2 = tf.nn.relu(tf.matmul(v, W1) + b1)
-            v3 = tf.nn.relu(tf.matmul(x, W2) + b2)
-            v4 = tf.nn.relu(tf.matmul(x, W3) + b3)
+            v2 = tf.nn.relu(tf.matmul(v1, W1) + b1)
+            v3 = tf.nn.relu(tf.matmul(v2, W2) + b2)
+            v4 = tf.nn.relu(tf.matmul(v3, W3) + b3)
 
             self.regularization_term = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(b1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(b2)) \
                     + tf.reduce_sum(tf.square(W3)) + tf.reduce_sum(tf.square(b3)) + tf.reduce_sum(tf.square(W4)) + tf.reduce_sum(tf.square(b4)) 

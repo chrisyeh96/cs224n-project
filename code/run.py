@@ -166,7 +166,7 @@ class ModelHelper(object):
 def print_options(args, config):
     print("Running with options:")
     for key, value in vars(args).iteritems():
-        print("\t%s:\t\t\t%s" % (key, value if value is not None else getattr(config, str(value))))
+        print("\t%s:\t\t\t%s" % (key, value if value is not None else getattr(config, str(key))))
 
 if __name__ == "__main__":
     description = "Run the similarity_model"

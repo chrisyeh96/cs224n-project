@@ -166,7 +166,7 @@ class ModelHelper(object):
 def print_options(args, config):
     print("Running with options:")
     for key, value in vars(args).iteritems():
-        print("\t%s:\t\t\t%s" % (key, value if value is not None else getattr(config, str(key))))
+        print("\t%s: %s" % (key, value if value is not None else getattr(config, str(key))))
 
 if __name__ == "__main__":
     description = "Run the similarity_model"
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
         with tf.Session() as session:
             session.run(init)
-            best_accuracy, best_f1 = model.fit(session, saver, train, test)
+            best_accuracy, best_f1 = model.fit(session, saver, train + dev, test)
             print("best accuracy: %f, best f1: %f" % (best_accuracy, best_f1))
 
 

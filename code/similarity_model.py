@@ -410,7 +410,7 @@ class SimilarityModel(Model):
             score_dev, precision_dev, recall_dev, f1_dev = dev_results
             score_test, precision_test, recall_test, f1_test = test_results
 
-            if score_test > best_test_score:
+            if score_test > best_test_accuracy:
                 best_test_accuracy = score_test
                 best_test_f1 = f1_test
 

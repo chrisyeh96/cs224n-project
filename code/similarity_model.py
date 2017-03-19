@@ -233,23 +233,14 @@ class SimilarityModel(Model):
             W1 = tf.get_variable("W1", (4 * self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
             b1 = tf.get_variable("b1", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
 
-            W2 = tf.get_variable("W2", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            b2 = tf.get_variable("b2", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
-
-            W3 = tf.get_variable("W3", (self.config.hidden_size, self.config.hidden_size), tf.float32, tf.contrib.layers.xavier_initializer())
-            b3 = tf.get_variable("b3", (self.config.hidden_size,), tf.float32, tf.constant_initializer(0))
-
-            W4 = tf.get_variable("W4", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
-            b4 = tf.get_variable("b4", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
+            W2 = tf.get_variable("W2", (self.config.hidden_size, self.config.n_classes), tf.float32, tf.contrib.layers.xavier_initializer())
+            b2 = tf.get_variable("b2", (self.config.n_classes,), tf.float32, tf.constant_initializer(0))
 
             v1 = tf.nn.relu(tf.concat(1, [h1, h2, tf.square(h1 - h2), h1 * h2]))
             v2 = tf.nn.relu(tf.matmul(v1, W1) + b1)
-            v3 = tf.nn.relu(tf.matmul(v2, W2) + b2)
-            v4 = tf.nn.relu(tf.matmul(v3, W3) + b3)
 
-            self.regularization_term = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(b1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(b2)) \
-                    + tf.reduce_sum(tf.square(W3)) + tf.reduce_sum(tf.square(b3)) + tf.reduce_sum(tf.square(W4)) + tf.reduce_sum(tf.square(b4)) 
-            preds = tf.matmul(v4, W4) + b4
+            self.regularization_term = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(b1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(b2))
+            preds = tf.matmul(v2, W2) + b2
 
         else:
             raise ValueError("Unsuppported distance type: " + self.config.distance_measure)

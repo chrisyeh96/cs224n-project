@@ -394,8 +394,10 @@ class SimilarityModel(Model):
         Returns:
             best training loss over the self.config.n_epochs of training
         """
-        best_score = 0.
-        f1_for_best_score = 0.
+        best_dev_score = 0.
+        f1_for_best_dev_score = 0.
+        best_test_accuracy = 0.
+        best_test_f1 = 0.
 
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
@@ -408,11 +410,15 @@ class SimilarityModel(Model):
             score_dev, precision_dev, recall_dev, f1_dev = dev_results
             score_test, precision_test, recall_test, f1_test = test_results
 
+            if score_test > best_test_score:
+                best_test_accuracy = score_test
+                best_test_f1 = f1_test
 
-            if score_dev > best_score:
+
+            if score_dev > best_dev_score:
                 print("New best accuracy!!")
-                best_score = score_dev
-                f1_for_best_score = f1_dev
+                best_dev_score = score_dev
+                f1_for_best_dev_score = f1_dev
                 if saver is not None:
                     checkpoint_dir = "../saved_ckpts/"
                     if not os.path.exists(checkpoint_dir):
@@ -435,4 +441,4 @@ class SimilarityModel(Model):
             print("Test F1 Score: %f" % f1_test)
 
             print("")
-        return best_score, f1_for_best_score
+        return best_dev_score, f1_for_best_dev_score, best_test_accuracy, best_test_f1

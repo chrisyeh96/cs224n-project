@@ -24,7 +24,7 @@ class Config:
     dropout = 0.5
     embed_size = 300 # word vector dimensions
     output_size = 50
-    n_epochs = 30
+    n_epochs = 60
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
@@ -33,7 +33,7 @@ class Config:
     hidden_size = 250
     batch_size = 1024
     max_length = 30
-    distance_measure = "l2" # one of ["l2", "cosine", "custom_coef", "concat"]
+    distance_measure = "concat_steroids" # one of ["l2", "cosine", "custom_coef", "concat"]
     cell = "gru" # one of ["rnn", "gru"]
     regularization_constant = 0.0001
 
@@ -221,8 +221,8 @@ if __name__ == "__main__":
 
         with tf.Session() as session:
             session.run(init)
-            best_accuracy, best_f1 = model.fit(session, saver, train, dev, test)
-            print("best dev accuracy: %f, best dev f1: %f" % (best_accuracy, best_f1))
+            best_dev_accuracy, best_dev_f1, best_test_accuracy, best_test_f1 = model.fit(session, saver, train, dev, test)
+            print("best dev accuracy: %f, best dev f1: %f, best test accuracy: %f, best test f1: %f" % (best_accuracy, best_f1, best_test_accuracy, best_test_f1))
 
 
     # accuracy_results = []

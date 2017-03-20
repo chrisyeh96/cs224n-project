@@ -280,8 +280,13 @@ if __name__ == "__main__":
         saver = None
         if args.save_params:
             saver = tf.train.Saver()
+        
+        sess_config = tf.ConfigProto(allow_soft_placement=True)
+        sess_config.gpu_options.allow_growth = True
+        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.01
 
-        with tf.Session() as session:
+        # start a TensorFlow session, initialize all variables, then run model
+        with tf.Session(config=sess_config) as session:
             session.run(init)
             best_dev_accuracy, best_dev_f1, best_test_accuracy, best_test_f1 = model.fit(session, saver, train, dev, test)
             print("best dev accuracy: %f, best dev f1: %f, best test accuracy: %f, best test f1: %f" % (best_accuracy, best_f1, best_test_accuracy, best_test_f1))

@@ -499,10 +499,10 @@ class SimilarityModel(Model):
                     print("Model saved in file: %s" % save_path)
 
         # save results to pickle
-        results = "../results/"
+        results_dir = "../results/"
         filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pkl" % (int(self.config.augment_data), self.config.cell,
             self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
-        save_path = os.path.join(checkpoint_dir, filename)
+        save_path = os.path.join(results_dir, filename)
         with open(save_path, 'wb') as f:
             pickle.dump(results, f)
 

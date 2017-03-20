@@ -9,6 +9,8 @@ def createResultsCSV():
         writer.writeheader()
 
 if __name__ == "__main__":
+    createResultsCSV()
+    
     cells = ["rnn", "gru"]
     distance_measures = ["l2", "cosine", "custom_coef", "concat", "concat_steroids"]
     regularization_constants = [0.01, 0.001, 0.0001]

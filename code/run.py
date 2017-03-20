@@ -99,7 +99,8 @@ def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_glove
     test_data = [data_vectorized[i] for i in test_indices]
 
     if augment_data:
-        ModelHelper.augment_data(train_data)
+        print("Augmenting data...")
+        helper.augment_data(train_data)
 
     return helper, train_data, dev_data, test_data
 

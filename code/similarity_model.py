@@ -308,9 +308,9 @@ class SimilarityModel(Model):
         """
         Args:
             sess: a TFSession
-            examples: [ list of all sentence 1,
-                        list of all sentence 2,
-                        list of all labels ]
+            examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
         Returns:
             fraction of correct predictions
             TODO: maybe return the actual predictions as well
@@ -320,11 +320,13 @@ class SimilarityModel(Model):
         fp = 0.0
         fn = 0.0
 
-        num_examples = len(examples[0])
-
         preds = []
-        prog = Progbar(target=1+int(self.config.batch_size))
-        for i, batch in enumerate(self.minibatch(examples, self.config.batch_size, shuffle=False)):
+
+        num_examples = len(examples[0])
+        num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
+        prog = Progbar(target=num_batches)
+
+        for i, batch in enumerate(self.minibatch(examples, shuffle=False)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
@@ -354,25 +356,26 @@ class SimilarityModel(Model):
 
         return (preds, accuracy, precision, recall, f1)
 
-    def minibatch(self, train_examples, batch_size, shuffle=True):
+    def minibatch(self, examples, shuffle=True):
         """
         Args:
-            train_examples: [ list of all sentence 1 (numpy arrays),
-                        list of all sentence 2 (numpy arrays),
-                        list of all labels (ints)]
+            examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
             batch_size: int
-            shuffle: bool, whether or not to shuffle the train_examples before creating batches
+            shuffle: bool, whether or not to shuffle the examples before creating batches
         Yields: (sentence1_batch, sentence2_batch, labels_batch)
             sentence1_batch: numpy array with shape (batch_size, max_length)
             sentence2_batch: same idea as sentence1_batch
             labels_batch: (batch_size,) numpy array of labels for the batch
         """
-        sent1, sent2, labels = train_examples
+        sent1, sent2, labels = examples
         num_examples = len(sent1)
         order = np.arange(num_examples)
         if shuffle:
             np.random.shuffle(order)
 
+        batch_size = self.config.batch_size
         num_batches = int(np.ceil(num_examples * 1.0 / batch_size))
         for i in range(num_batches):
             start = i * batch_size
@@ -383,16 +386,18 @@ class SimilarityModel(Model):
         """
         Args:
             sess: TFSession
-            train_examples: [ list of all sentence 1,
-                        list of all sentence 2,
-                        list of all labels ]
+            train_examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
             dev_set: same as train_examples, except for the dev set
         Returns:
             percentage of correct predictions on the dev set
         """
-        prog = Progbar(target = 1 + int(len(train_examples[0]) / self.config.batch_size))
+        num_examples = len(train_examples[0])
+        num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
+        prog = Progbar(target=num_batches)
         
-        for i, batch in enumerate(self.minibatch(train_examples, self.config.batch_size, shuffle=True)):
+        for i, batch in enumerate(self.minibatch(train_examples, shuffle=True)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
             _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
@@ -459,7 +464,7 @@ class SimilarityModel(Model):
 
                 # save preds_dev so that we can see where the mistakes are on the dev set
                 checkpoint_dir = "../saved_ckpts/"
-                filename = "model_d_%s_r_%g_hs_%d_ml_%d.ckpt" % (self.config.distance_measure,
+                filename = "model_d_%s_r_%g_hs_%d_ml_%d.pkl" % (self.config.distance_measure,
                         self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
                 save_path = os.path.join(checkpoint_dir, filename)
                 with open(save_path, 'wb') as f:

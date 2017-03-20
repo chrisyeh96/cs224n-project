@@ -184,19 +184,31 @@ class ModelHelper(object):
         print("Added %d negative examples to the training set" % count)
 
         # augment with 50% more positive (exact duplicate) training examples
-        rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,))
-        rand_cols = np.random.randint(0, high=2, size=(num_examples,))
         count = 0
         for i in range(num_examples):
-            if data[rand_rows[i]][2] == 1:
-                continue
+            if data[i][2] == 1:
+                q1 = data[i][0]
+                q2 = data[i][1]
+                data.append((q2,q1,1))
+                count += 1
 
-            q = data[rand_rows[i]][rand_cols[i]]
-            data.append((q,q,1))
-            count += 1
             if count == num_examples/2:
                 break
-        print("Added %d positive (exact duplicate) examples to the training set" % count)
+
+        # rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,))
+        # rand_cols = np.random.randint(0, high=2, size=(num_examples,))
+        # count = 0
+        # for i in range(num_examples):
+        #     if data[rand_rows[i]][2] == 1:
+        #         continue
+
+        #     q = data[rand_rows[i]][rand_cols[i]]
+        #     data.append((q,q,1))
+        #     count += 1
+        #     if count == num_examples/2:
+        #         break
+
+        print("Added %d positive (flipped duplicate) examples to the training set" % count)
 
     def jaccard_similarity(self,x,y):
         intersection_cardinality = len(set.intersection(*[set(x), set(y)]))

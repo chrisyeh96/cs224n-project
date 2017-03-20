@@ -362,14 +362,16 @@ class SimilarityModel(Model):
                         list of all labels (ints)]
             batch_size: int
             shuffle: bool, whether or not to shuffle the train_examples before creating batches
-        Yields:
-            (batch of sentence1, batch of sentence2)
+        Yields: (sentence1_batch, sentence2_batch, labels_batch)
+            sentence1_batch: numpy array with shape (batch_size, max_length)
+            sentence2_batch: same idea as sentence1_batch
+            labels_batch: (batch_size,) numpy array of labels for the batch
         """
         sent1, sent2, labels = train_examples
         num_examples = len(sent1)
         order = np.arange(num_examples)
         if shuffle:
-            order = np.random.shuffle(order)
+            np.random.shuffle(order)
 
         num_batches = int(np.ceil(num_examples * 1.0 / batch_size))
         for i in range(num_batches):

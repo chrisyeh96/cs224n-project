@@ -28,7 +28,7 @@ if __name__ == "__main__":
                         for ml in max_lengths:
                             command = "python run.py"
 
-                            if augment_datas:
+                            if a:
                                 command += " -a"
 
                             command += " -c %s" % c

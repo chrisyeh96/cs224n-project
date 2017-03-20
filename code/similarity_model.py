@@ -482,7 +482,7 @@ class SimilarityModel(Model):
                     print("%s %s: %f" % (split, score, results[split][score][epoch]))
                 print("")
 
-            if results["dev"]["accuracy"][epoch] > np.max(results["dev"]["accuracy"][0:epoch])
+            if results["dev"]["accuracy"][epoch] > np.max(results["dev"]["accuracy"][0:epoch]):
                 print("New best accuracy on dev set!!")
 
                 if saver is not None:

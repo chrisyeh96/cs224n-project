@@ -311,12 +311,12 @@ if __name__ == "__main__":
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         
         hyperparams_and_results_dict = {
-            "cell": self.config.cell,
-            "distance_measure": self.config.distance_measure,
-            "augment_data": self.config.augment_data,
-            "regularization_constant": self.config.regularization_constant,
-            "hidden_size": self.config.hidden_size,
-            "max_length": self.config.max_length,
+            "cell": config.cell,
+            "distance_measure": config.distance_measure,
+            "augment_data": config.augment_data,
+            "regularization_constant": config.regularization_constant,
+            "hidden_size": config.hidden_size,
+            "max_length": config.max_length,
             "best_dev_accuracy": best_dev_accuracy,
             "dev_f1": dev_f1,
             "test_accuracy": test_accuracy,

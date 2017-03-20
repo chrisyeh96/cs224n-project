@@ -13,6 +13,8 @@ GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"
 TOKENS_TO_GLOVEID_PATH = "../data/glove/glove.6B.300d.pkl"
 MAX_LENGTH_PATH = "../data/quora/max_length.pkl"
 
+JACCARD_SIMILARITY_THRESH = 0.1
+
 class Config:
     """Holds model hyperparams and data information.
 
@@ -72,10 +74,9 @@ def read_datafile(fstream):
 
     return examples
 
-def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_gloveID_path, max_length):
+def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_gloveID_path, max_length, augment_data=False):
     """
     Reads the training and dev data sets from the given paths.
-    TODO: should we have train/validation/test split instead of just train/dev?
     """
     print("Loading all data...")
     with open(data_path, 'r') as data_file:
@@ -96,6 +97,9 @@ def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_glove
     train_data = [data_vectorized[i] for i in train_indices]
     dev_data = [data_vectorized[i] for i in dev_indices]
     test_data = [data_vectorized[i] for i in test_indices]
+
+    if augment_data:
+        ModelHelper.augment_data(train_data)
 
     return helper, train_data, dev_data, test_data
 
@@ -154,6 +158,33 @@ class ModelHelper(object):
     def vectorize(self, data):
         return [self.vectorize_example(example) for example in data]
 
+    def augment_data(self, data):
+        num_examples = len(data)
+        # augment with 50% more negative training examples
+        rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,2))
+        rand_cols = np.random.randint(0, high=2, size=(num_examples,2))
+        for i in range(num_examples):
+            if rand_rows[i,0] == rand_rows[i,1]:
+                continue
+
+            q1 = data[rand_rows[i,0]][rand_cols[i,0]]
+            q2 = data[rand_rows[i,1]][rand_cols[i,1]]
+            if q1 == q2:
+                continue
+
+            if self.jaccard_similarity(q1,q2) < JACCARD_SIMILARITY_THRESH:
+                continue
+
+            data.append((q1,q2,0))
+            count += 1
+            if count == num_examples/2:
+                break
+
+    def jaccard_similarity(self,x,y):
+        intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
+        union_cardinality = len(set.union(*[set(x), set(y)]))
+        return intersection_cardinality/float(union_cardinality)
+
     @classmethod
     def load(cls, tokens_to_gloveID_path, max_length):
         # Make sure the directory exists.
@@ -172,6 +203,7 @@ def print_options(args, config):
 if __name__ == "__main__":
     description = "Run the similarity_model"
     parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-a", "--augment", action="store_true", help="augment data with random negative samples")
     parser.add_argument("-b", "--batch_size", type=int, required=False, help="number of examples for each minibatch")
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef", "concat", "concat_steroids"], help="distance measure")
@@ -197,7 +229,7 @@ if __name__ == "__main__":
 
 
     print("Preparing data...")
-    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length)
+    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, args.augment)
 
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')

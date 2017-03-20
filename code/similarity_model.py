@@ -8,6 +8,7 @@ from util import Progbar, cosine_distance, norm
 import numpy as np
 import os
 import pdb
+import pickle
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
@@ -292,7 +293,15 @@ class SimilarityModel(Model):
     def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
         predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
-        return np.round(predictions).astype(int)
+
+        if self.config.distance_measure in ["concat", "concat_steroids"]:
+            # predictions = array of size (num_examples, 2)
+            # is the input into the softmax, but we just care about comparing the two values
+            return (predictions[:, 1] > predictions[:, 0]).astype(int)
+        else:
+            # predictions = scalar output of logistic regression
+            # => we need to round to nearest int (either 0 or 1)
+            return np.round(predictions).astype(int)
 
     # evaluate model after training
     def evaluate(self, sess, examples):
@@ -319,10 +328,6 @@ class SimilarityModel(Model):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
-
-            if self.config.distance_measure == "concat" or self.config.distance_measure == "concat_steroids":
-                preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
-
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
@@ -347,7 +352,7 @@ class SimilarityModel(Model):
         print("\ntp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
-        return (accuracy, precision, recall, f1)
+        return (preds, accuracy, precision, recall, f1)
 
     def minibatch(self, train_examples, batch_size, shuffle=True):
         sent1, sent2, labels = train_examples
@@ -382,10 +387,6 @@ class SimilarityModel(Model):
             prog.update(i+1, [("train loss", loss)])
         print("")
 
-        accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
-        accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
-        return (accuracy_dev, precision_dev, recall_dev, f1_dev), (accuracy_test, precision_test, recall_test, f1_test)
-
     def preprocess_sequence_data(self, examples):
         return zip(*examples)
 
@@ -413,19 +414,28 @@ class SimilarityModel(Model):
 
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
-            dev_results, test_results = self.run_epoch(sess, train_examples, dev_set, test_set)
-            score_dev, precision_dev, recall_dev, f1_dev = dev_results
-            score_test, precision_test, recall_test, f1_test = test_results
+            self.run_epoch(sess, train_examples, dev_set, test_set)
+
+            preds_dev, accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
+            preds_test, accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
 
             if score_test > best_test_accuracy:
                 best_test_accuracy = score_test
                 best_test_f1 = f1_test
 
-
             if score_dev > best_dev_score:
                 print("New best accuracy!!")
                 best_dev_score = score_dev
                 f1_for_best_dev_score = f1_dev
+
+                # save preds_dev so that we can see where the mistakes are on the dev set
+                checkpoint_dir = "../saved_ckpts/"
+                filename = "model_d_%s_r_%g_hs_%d_ml_%d.ckpt" % (self.config.distance_measure,
+                        self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
+                save_path = os.path.join(checkpoint_dir, filename)
+                with open(save_path, 'wb') as f:
+                    pickle.dump(preds_dev, f)
+
                 if saver is not None:
                     checkpoint_dir = "../saved_ckpts/"
                     if not os.path.exists(checkpoint_dir):

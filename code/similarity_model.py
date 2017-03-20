@@ -4,7 +4,7 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 from gru_cell import GRUCell
-from util import Progbar, minibatches, cosine_distance, norm
+from util import Progbar, cosine_distance, norm
 import numpy as np
 import os
 import pdb
@@ -315,7 +315,7 @@ class SimilarityModel(Model):
 
         preds = []
         prog = Progbar(target=1+int(self.config.batch_size))
-        for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
+        for i, batch in enumerate(self.minibatch(examples, self.config.batch_size, shuffle=False)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
@@ -349,13 +349,18 @@ class SimilarityModel(Model):
 
         return (accuracy, precision, recall, f1)
 
-    def stupid_minibatch(self, train_examples, batch_size):
+    def minibatch(self, train_examples, batch_size, shuffle=True):
         sent1, sent2, labels = train_examples
         num_examples = len(sent1)
-        for i in range(int(np.ceil(num_examples / batch_size))):
+        order = np.arange(num_examples)
+        if shuffle:
+            order = np.random.shuffle(order)
+
+        num_batches = int(np.ceil(num_examples * 1.0 / batch_size))
+        for i in range(num_batches):
             start = i * batch_size
             end = min(i * batch_size + batch_size, num_examples)
-            yield (sent1[start:end], sent2[start:end], labels[start:end])
+            yield (sent1[order[start:end]], sent2[order[start:end]], labels[order[start:end]])
 
     def run_epoch(self, sess, train_examples, dev_set, test_set):
         """
@@ -370,7 +375,7 @@ class SimilarityModel(Model):
         """
         prog = Progbar(target = 1 + int(len(train_examples[0]) / self.config.batch_size))
         
-        for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
+        for i, batch in enumerate(self.minibatch(train_examples, self.config.batch_size, shuffle=True)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
             _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)

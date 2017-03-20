@@ -431,8 +431,8 @@ class SimilarityModel(Model):
         Returns:
             best training loss over the self.config.n_epochs of training
         """
-        best_dev_score = 0.
-        f1_for_best_dev_score = 0.
+        best_dev_accuracy = 0.
+        f1_for_best_dev_accuracy = 0.
         best_test_accuracy = 0.
         best_test_f1 = 0.
 
@@ -448,14 +448,14 @@ class SimilarityModel(Model):
             preds_dev, accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
             preds_test, accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
 
-            if score_test > best_test_accuracy:
-                best_test_accuracy = score_test
+            if accuracy_test > best_test_accuracy:
+                best_test_accuracy = accuracy_test
                 best_test_f1 = f1_test
 
-            if score_dev > best_dev_score:
+            if accuracy_dev > best_dev_accuracy:
                 print("New best accuracy!!")
-                best_dev_score = score_dev
-                f1_for_best_dev_score = f1_dev
+                best_dev_accuracy = accuracy_dev
+                f1_for_best_dev_accuracy = f1_dev
 
                 # save preds_dev so that we can see where the mistakes are on the dev set
                 checkpoint_dir = "../saved_ckpts/"
@@ -475,16 +475,16 @@ class SimilarityModel(Model):
                     save_path = saver.save(sess, os.path.join(checkpoint_dir, filename))
                     print("Model saved in file: %s" % save_path)
 
-            print('Dev Accuracy: %f' % score_dev)
+            print('Dev Accuracy: %f' % accuracy_dev)
             print("Dev Precision: %f" % precision_dev)
             print("Dev Recall: %f" % recall_dev)
-            print("Dev F1 Score: %f" % f1_dev)
+            print("Dev F1: %f" % f1_dev)
             print('')
 
-            print('Test Accuracy: %f' % score_test)
+            print('Test Accuracy: %f' % accuracy_test)
             print("Test Precision: %f" % precision_test)
             print("Test Recall: %f" % recall_test)
-            print("Test F1 Score: %f" % f1_test)
+            print("Test F1: %f" % f1_test)
 
             print("")
-        return best_dev_score, f1_for_best_dev_score, best_test_accuracy, best_test_f1
+        return best_dev_accuracy, f1_for_best_dev_accuracy, best_test_accuracy, best_test_f1

@@ -112,19 +112,20 @@ class SimilarityModel(Model):
         Returns:
             embeddings: tf.Tensor of shape (None, max_length, embed_size)
         """
-        embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
-        # glove_vectors = tf.Variable(self.pretrained_embeddings)
-        # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
-        # embeddings = [glove_vectors, additional_embeddings]
+        # treat all word vectors as variables that we can update
+        if self.config.update_embeddings:
+            embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
+
+        # alternatively, only update the additional_embeddings (unknown / padding words)
+        else:
+            glove_vectors = tf.constant(self.pretrained_embeddings)
+            additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+            embeddings = tf.concat(0, [glove_vectors, additional_embeddings])
 
         # look up values of input indices from pretrained embeddings
         # embeddings1 and embeddings2 will have shape (num_examples, max_length, embed_size)
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
-
-        # reshape the embeddings to 3-D tensors of shape (num_examples, max_length, embed_size)
-        # embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
-        # embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
         return embeddings1, embeddings2
 
     def add_prediction_op(self):
@@ -392,18 +393,22 @@ class SimilarityModel(Model):
                         numpy array (num_examples, ) of all labels ]
             dev_set: same as train_examples, except for the dev set
         Returns:
-            percentage of correct predictions on the dev set
+            avg loss across all minibatches
         """
         num_examples = len(train_examples[0])
         num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
         prog = Progbar(target=num_batches)
+
+        total_loss = 0.0
         
         for i, batch in enumerate(self.minibatch(train_examples, shuffle=True)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
             _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
+            total_loss += loss
             prog.update(i+1, [("train loss", loss)])
         print("")
+        return total_loss / num_batches
 
     def preprocess_sequence_data(self, examples):
         """
@@ -437,39 +442,48 @@ class SimilarityModel(Model):
         Returns:
             best training loss over the self.config.n_epochs of training
         """
-        best_dev_accuracy = 0.
-        f1_for_best_dev_accuracy = 0.
-        best_test_accuracy = 0.
-        best_test_f1 = 0.
-
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
         test_set = self.preprocess_sequence_data(test_set_raw)
 
+        splits = {
+            "train" : train_examples,
+            "dev" : dev_set,
+            "test" : test_set
+        }
+
+        results = {}
+        for split in splits:
+            num_examples = len(splits[split][0])
+            results[split] = {
+                "preds" : np.zeros((self.config.n_epochs, num_examples))
+                "accuracy" : np.zeros(self.config.n_epochs),
+                "precision" : np.zeros(self.config.n_epochs),
+                "recall" : np.zeros(self.config.n_epochs),
+                "f1" : np.zeros(self.config.n_epochs)
+            }
+
+        previous_loss = 1000.0
+
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
             self.run_epoch(sess, train_examples, dev_set, test_set)
 
-            preds_dev, accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
-            preds_test, accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
+            for split in splits:
+                preds, accuracy, precision, recall, f1 = self.evaluate(sess, splits[split])
+                results[split]["preds"][epoch] = preds
+                results[split]["accuracy"][epoch] = accuracy
+                results[split]["precision"][epoch] = precision
+                results[split]["recall"][epoch] = recall
+                results[split]["f1"][epoch] = f1
 
-            if accuracy_test > best_test_accuracy:
-                best_test_accuracy = accuracy_test
-                best_test_f1 = f1_test
+                for score in ["accuracy", "precision", "recall", "f1"]:
+                    print("%s %s: %f" % (split, score, results[split][score][epoch]))
+                print("")
 
-            if accuracy_dev > best_dev_accuracy:
-                print("New best accuracy!!")
-                best_dev_accuracy = accuracy_dev
-                f1_for_best_dev_accuracy = f1_dev
-
-                # save preds_dev so that we can see where the mistakes are on the dev set
-                checkpoint_dir = "../saved_ckpts/"
-                filename = "model_d_%s_r_%g_hs_%d_ml_%d.pkl" % (self.config.distance_measure,
-                        self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
-                save_path = os.path.join(checkpoint_dir, filename)
-                with open(save_path, 'wb') as f:
-                    pickle.dump(preds_dev, f)
+            if results["dev"]["accuracy"][epoch] > np.max(results["dev"]["accuracy"][0:epoch])
+                print("New best accuracy on dev set!!")
 
                 if saver is not None:
                     checkpoint_dir = "../saved_ckpts/"
@@ -481,16 +495,20 @@ class SimilarityModel(Model):
                     save_path = saver.save(sess, os.path.join(checkpoint_dir, filename))
                     print("Model saved in file: %s" % save_path)
 
-            print('Dev Accuracy: %f' % accuracy_dev)
-            print("Dev Precision: %f" % precision_dev)
-            print("Dev Recall: %f" % recall_dev)
-            print("Dev F1: %f" % f1_dev)
-            print('')
+        # save results to pickle
+        results = "../results/"
+        filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pkl" % (int(self.config.augment_data), self.config.cell,
+            self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
+        save_path = os.path.join(checkpoint_dir, filename)
+        with open(save_path, 'wb') as f:
+            pickle.dump(results, f)
 
-            print('Test Accuracy: %f' % accuracy_test)
-            print("Test Precision: %f" % precision_test)
-            print("Test Recall: %f" % recall_test)
-            print("Test F1: %f" % f1_test)
+        best_dev_accuracy_epoch = np.argmax(results["dev"]["accuracy"])
+        
+        best_dev_accuracy = results["dev"]["accuracy"][best_dev_accuracy_epoch]
+        best_dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]
 
-            print("")
-        return best_dev_accuracy, f1_for_best_dev_accuracy, best_test_accuracy, best_test_f1
+        test_accuracy = results["test"]["accuracy"][best_dev_accuracy_epoch]
+        test_f1 = results["test"]["f1"][best_dev_accuracy_epoch]
+
+        return best_dev_accuracy, best_dev_accuracy_f1, test_accuracy, test_f1

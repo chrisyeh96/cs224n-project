@@ -5,6 +5,7 @@ import numpy as np
 import sys, os, time, pickle
 from similarity_model import SimilarityModel
 import argparse
+import csv
 
 DATA_PATH = "../data/quora/tokenized_data.tsv"
 DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
@@ -22,11 +23,15 @@ class Config:
     information parameters. Model objects are passed a Config() object at
     instantiation.
     """
+    augment_data = False
+    save_params = False
+    update_embeddings = True
+
     # each word just indexes into glove vectors
     dropout = 0.5
     embed_size = 300 # word vector dimensions
     output_size = 50
-    n_epochs = 60
+    n_epochs = 30
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2
@@ -35,7 +40,7 @@ class Config:
     hidden_size = 250
     batch_size = 1024
     max_length = 30
-    distance_measure = "concat_steroids" # one of ["l2", "cosine", "custom_coef", "concat"]
+    distance_measure = "concat_steroids" # one of ["l2", "cosine", "custom_coef", "concat", "concat_steroids"]
     cell = "gru" # one of ["rnn", "gru"]
     regularization_constant = 0.0001
 
@@ -240,7 +245,7 @@ def print_options(args, config):
 if __name__ == "__main__":
     description = "Run the similarity_model"
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("-a", "--augment", action="store_true", help="augment data with random negative samples")
+    parser.add_argument("-a", "--augment_data", action="store_true", help="augment data with negative and positive samples")
     parser.add_argument("-b", "--batch_size", type=int, required=False, help="number of examples for each minibatch")
     parser.add_argument("-c", "--cell", required=False, choices=["rnn", "gru"], help="model cell type")
     parser.add_argument("-d", "--distance_measure", required=False, choices=["l2", "cosine", "custom_coef", "concat", "concat_steroids"], help="distance measure")
@@ -251,6 +256,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = Config()
+    config.augment_data = args.augment_data
+    config.save_params = args.save_params
     if args.batch_size is not None:
         config.batch_size = args.batch_size
     if args.cell is not None:
@@ -266,7 +273,7 @@ if __name__ == "__main__":
 
 
     print("Preparing data...")
-    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, args.augment)
+    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
 
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
@@ -285,7 +292,7 @@ if __name__ == "__main__":
 
         init = tf.global_variables_initializer()
         saver = None
-        if args.save_params:
+        if config.save_params:
             saver = tf.train.Saver()
         
         sess_config = tf.ConfigProto(allow_soft_placement=True)
@@ -295,8 +302,27 @@ if __name__ == "__main__":
         # start a TensorFlow session, initialize all variables, then run model
         with tf.Session(config=sess_config) as session:
             session.run(init)
-            best_dev_accuracy, best_dev_f1, best_test_accuracy, best_test_f1 = model.fit(session, saver, train, dev, test)
-            print("best dev accuracy: %f, best dev f1: %f, best test accuracy: %f, best test f1: %f" % (best_accuracy, best_f1, best_test_accuracy, best_test_f1))
+            best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
+            print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
+
+    with open("../results/model_results.csv", 'a') as f:
+        fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", \
+            "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        
+        hyperparams_and_results_dict = {
+            "cell": self.config.cell,
+            "distance_measure": self.config.distance_measure,
+            "augment_data": self.config.augment_data,
+            "regularization_constant": self.config.regularization_constant,
+            "hidden_size": self.config.hidden_size,
+            "max_length": self.config.max_length,
+            "best_dev_accuracy": best_dev_accuracy,
+            "dev_f1": dev_f1,
+            "test_accuracy": test_accuracy,
+            "test_f1": test_f1
+        }
+        writer.writerow(hyperparams_and_results_dict)
 
 
     # accuracy_results = []

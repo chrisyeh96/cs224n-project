@@ -321,6 +321,7 @@ class SimilarityModel(Model):
         fn = 0.0
 
         preds = []
+        confusion_matrix = np.zeros((2,2), dtype=np.float64)
 
         num_examples = len(examples[0])
         num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
@@ -333,20 +334,20 @@ class SimilarityModel(Model):
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-            for i in range(preds_.shape[0]):
-                if preds_[i] == 1:
-                    if labels_batch[i] == 1:
-                        tp += 1.0
-                    else:
-                        fp += 1.0
-                else:
-                    if labels_batch[i] == 1:
-                        fn += 1.0
+            for j in range(preds_.shape[0]):
+                confusion_matrix[labels_batch[j], preds_[j]] += 1
 
-            correct_preds += (preds_ == labels_batch).sum()
+            prog.update(i+1)
 
-            prog.update(i + 1, [])
-
+        ## CONFUSION MATRIX (is indeed hella confusing)
+        #            pred -   pred +
+        # label -  |   tn   |   fp   |
+        # label +  |   fn   |   tp   |
+        tn = confusion_matrix[0,0]
+        fp = confusion_matrix[0,1]
+        fn = confusion_matrix[1,0]
+        tp = confusion_matrix[1,1]
+        correct_preds = tp + tn
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0

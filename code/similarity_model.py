@@ -464,7 +464,8 @@ class SimilarityModel(Model):
                 "f1" : np.zeros(self.config.n_epochs)
             }
 
-        previous_loss = 1000.0
+        best_dev_accuracy = 0
+        best_dev_accuracy_epoch = 0
 
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
@@ -482,7 +483,9 @@ class SimilarityModel(Model):
                     print("%s %s: %f" % (split, score, results[split][score][epoch]))
                 print("")
 
-            if results["dev"]["accuracy"][epoch] > np.max(results["dev"]["accuracy"][0:epoch]):
+            if results["dev"]["accuracy"][epoch] > best_dev_accuracy:
+                best_dev_accuracy = results["dev"]["accuracy"][epoch]
+                best_dev_accuracy_epoch = epoch
                 print("New best accuracy on dev set!!")
 
                 if saver is not None:
@@ -503,12 +506,9 @@ class SimilarityModel(Model):
         with open(save_path, 'wb') as f:
             pickle.dump(results, f)
 
-        best_dev_accuracy_epoch = np.argmax(results["dev"]["accuracy"])
-        
-        best_dev_accuracy = results["dev"]["accuracy"][best_dev_accuracy_epoch]
-        best_dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]
-
+        # calculate other relevant scores
+        dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]
         test_accuracy = results["test"]["accuracy"][best_dev_accuracy_epoch]
         test_f1 = results["test"]["f1"][best_dev_accuracy_epoch]
 
-        return best_dev_accuracy, best_dev_accuracy_f1, test_accuracy, test_f1
+        return best_dev_accuracy, dev_accuracy_f1, test_accuracy, test_f1

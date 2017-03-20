@@ -181,6 +181,7 @@ class ModelHelper(object):
             count += 1
             if count == num_examples/2:
                 break
+        print("Added %d negative examples to the training set" % count)
 
     def jaccard_similarity(self,x,y):
         intersection_cardinality = len(set.intersection(*[set(x), set(y)]))

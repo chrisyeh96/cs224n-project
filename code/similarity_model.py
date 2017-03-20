@@ -214,7 +214,9 @@ class SimilarityModel(Model):
             preds = tf.sigmoid(logistic_a * distance + logistic_b)
 
         elif self.config.distance_measure == "custom_coef":
-            # perform logistic regression on abs(h1-h2)
+            # perform logistic regression on the vector |h1-h2|,
+            # equivalent to logistic regression on the (scalar) weighted Manhattan distance between h1 and h2,
+            # ie. weighted sum of |h1-h2|
             logistic_a = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
             self.regularization_term = tf.reduce_sum(tf.square(logistic_a)) + tf.square(logistic_b)

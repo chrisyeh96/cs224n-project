@@ -457,7 +457,7 @@ class SimilarityModel(Model):
         for split in splits:
             num_examples = len(splits[split][0])
             results[split] = {
-                "preds" : np.zeros((self.config.n_epochs, num_examples))
+                "preds" : np.zeros((self.config.n_epochs, num_examples)),
                 "accuracy" : np.zeros(self.config.n_epochs),
                 "precision" : np.zeros(self.config.n_epochs),
                 "recall" : np.zeros(self.config.n_epochs),

@@ -504,7 +504,7 @@ class SimilarityModel(Model):
             self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
         save_path = os.path.join(results_dir, filename)
         with open(save_path, 'wb') as f:
-            pickle.dump(results, f)
+            pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         # calculate other relevant scores
         dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]

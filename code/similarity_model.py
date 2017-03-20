@@ -355,6 +355,16 @@ class SimilarityModel(Model):
         return (preds, accuracy, precision, recall, f1)
 
     def minibatch(self, train_examples, batch_size, shuffle=True):
+        """
+        Args:
+            train_examples: [ list of all sentence 1 (numpy arrays),
+                        list of all sentence 2 (numpy arrays),
+                        list of all labels (ints)]
+            batch_size: int
+            shuffle: bool, whether or not to shuffle the train_examples before creating batches
+        Yields:
+            (batch of sentence1, batch of sentence2)
+        """
         sent1, sent2, labels = train_examples
         num_examples = len(sent1)
         order = np.arange(num_examples)
@@ -388,7 +398,24 @@ class SimilarityModel(Model):
         print("")
 
     def preprocess_sequence_data(self, examples):
-        return zip(*examples)
+        """
+        Args:
+            examples: is list of tuples:
+                [ 
+                  (numpy array of sentence 1, numpy array of sentence2, int label),
+                  ...
+                ]
+        Returns: (all_sent1, all_sent2, all_labels)
+            all_sent1: numpy array of shape (num_examples, max_length)
+            all_sent2: same as all_sent1, except for the sentence2's
+            all_labels: numpy arrray of all labels, has shape (num_examples,)
+        """
+        # examples 
+        all_sent1, all_sent2, all_labels = zip(*examples)
+        all_sent1 = np.stack(all_sent1)
+        all_sent2 = np.stack(all_sent2)
+        all_labels = np.array(all_labels)
+        return (all_sent1, all_sent2, all_labels)
 
     def fit(self, sess, saver, train_examples_raw, dev_set_raw, test_set_raw):
         """

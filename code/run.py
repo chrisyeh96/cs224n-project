@@ -116,7 +116,6 @@ class ModelHelper(object):
         # then we can just compute the max_length in the vectorize functions.
         # Otherwise, we should load in max_length from some saved PKL file
         self.max_length = max_length
-        # self.max_length = 25 # TODO make constant or sth
 
     # add additional embeddings for unknown word and padding word 
     def add_additional_embeddings(self, embeddings):

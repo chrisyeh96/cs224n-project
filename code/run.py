@@ -163,6 +163,7 @@ class ModelHelper(object):
         # augment with 50% more negative training examples
         rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,2))
         rand_cols = np.random.randint(0, high=2, size=(num_examples,2))
+        count = 0
         for i in range(num_examples):
             if rand_rows[i,0] == rand_rows[i,1]:
                 continue

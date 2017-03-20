@@ -163,8 +163,10 @@ class ModelHelper(object):
         # augment with 50% more negative training examples
         rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,2))
         rand_cols = np.random.randint(0, high=2, size=(num_examples,2))
-        count = 0
-        for i in range(num_examples):
+        neg_count = 0
+        order = np.arange(num_examples)
+        np.random.shuffle(order)
+        for i in order:
             if rand_rows[i,0] == rand_rows[i,1]:
                 continue
 
@@ -177,37 +179,43 @@ class ModelHelper(object):
                 continue
 
             data.append((q1,q2,0))
-            count += 1
-            if count == num_examples/2:
+            neg_count += 1
+            if neg_count == num_examples/2:
                 break
-        print("Added %d negative examples to the training set" % count)
+        print("Added %d negative examples to the training set" % neg_count)
 
-        # augment with 50% more positive (exact duplicate) training examples
-        count = 0
-        for i in range(num_examples):
+        # augment with 25% more positive (flipped duplicate) training examples
+        flipped_count = 0
+        order = np.arange(num_examples)
+        np.random.shuffle(order)
+        for i in order:
             if data[i][2] == 1:
                 q1 = data[i][0]
                 q2 = data[i][1]
                 data.append((q2,q1,1))
-                count += 1
+                flipped_count += 1
 
-            if count == num_examples/2:
+            if flipped_count == num_examples/4:
+                break
+        print("Added %d positive (flipped duplicate) examples to the training set" % flipped_count)
+
+        # augment with 25% more positive (exact duplicate) training examples
+        rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,))
+        rand_cols = np.random.randint(0, high=2, size=(num_examples,))
+        exact_count = 0
+        order = np.arange(num_examples)
+        np.random.shuffle(order)
+        for i in order:
+            if data[rand_rows[i]][2] == 1:
+                continue
+
+            q = data[rand_rows[i]][rand_cols[i]]
+            data.append((q,q,1))
+            exact_count += 1
+            if exact_count == num_examples/4:
                 break
 
-        # rand_rows = np.random.randint(0, high=num_examples, size=(num_examples,))
-        # rand_cols = np.random.randint(0, high=2, size=(num_examples,))
-        # count = 0
-        # for i in range(num_examples):
-        #     if data[rand_rows[i]][2] == 1:
-        #         continue
-
-        #     q = data[rand_rows[i]][rand_cols[i]]
-        #     data.append((q,q,1))
-        #     count += 1
-        #     if count == num_examples/2:
-        #         break
-
-        print("Added %d positive (flipped duplicate) examples to the training set" % count)
+        print("Added %d positive (exact duplicate) examples to the training set" % exact_count)
 
     def jaccard_similarity(self,x,y):
         intersection_cardinality = len(set.intersection(*[set(x), set(y)]))

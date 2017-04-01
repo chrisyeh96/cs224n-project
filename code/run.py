@@ -222,7 +222,7 @@ if __name__ == "__main__":
         with tf.Session() as session:
             session.run(init)
             best_dev_accuracy, best_dev_f1, best_test_accuracy, best_test_f1 = model.fit(session, saver, train, dev, test)
-            print("best dev accuracy: %f, best dev f1: %f, best test accuracy: %f, best test f1: %f" % (best_accuracy, best_f1, best_test_accuracy, best_test_f1))
+            print("best dev accuracy: %f, best dev f1: %f, best test accuracy: %f, best test f1: %f" % (best_dev_accuracy, best_f1, best_test_accuracy, best_test_f1))
 
 
     # accuracy_results = []

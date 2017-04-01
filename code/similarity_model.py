@@ -4,10 +4,11 @@ import tensorflow as tf
 from model import Model
 from rnn_cell import RNNCell
 from gru_cell import GRUCell
-from util import Progbar, minibatches, cosine_distance, norm
+from util import Progbar, cosine_distance, norm
 import numpy as np
 import os
 import pdb
+import pickle
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
@@ -111,19 +112,20 @@ class SimilarityModel(Model):
         Returns:
             embeddings: tf.Tensor of shape (None, max_length, embed_size)
         """
-        embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
-        # glove_vectors = tf.Variable(self.pretrained_embeddings)
-        # additional_embeddings = tf.Variable(self.helper.additional_embeddings)
-        # embeddings = [glove_vectors, additional_embeddings]
+        # treat all word vectors as variables that we can update
+        if self.config.update_embeddings:
+            embeddings = tf.Variable(np.concatenate([self.pretrained_embeddings, self.helper.additional_embeddings]))
+
+        # alternatively, only update the additional_embeddings (unknown / padding words)
+        else:
+            glove_vectors = tf.constant(self.pretrained_embeddings)
+            additional_embeddings = tf.Variable(self.helper.additional_embeddings)
+            embeddings = tf.concat(0, [glove_vectors, additional_embeddings])
 
         # look up values of input indices from pretrained embeddings
         # embeddings1 and embeddings2 will have shape (num_examples, max_length, embed_size)
         embeddings1 = tf.nn.embedding_lookup(embeddings, self.input_placeholder1)
         embeddings2 = tf.nn.embedding_lookup(embeddings, self.input_placeholder2)
-
-        # reshape the embeddings to 3-D tensors of shape (num_examples, max_length, embed_size)
-        # embeddings1 = tf.reshape(embeddings1, [-1, self.helper.max_length, self.config.embed_size])
-        # embeddings2 = tf.reshape(embeddings2, [-1, self.helper.max_length, self.config.embed_size])
         return embeddings1, embeddings2
 
     def add_prediction_op(self):
@@ -214,7 +216,9 @@ class SimilarityModel(Model):
             preds = tf.sigmoid(logistic_a * distance + logistic_b)
 
         elif self.config.distance_measure == "custom_coef":
-            # perform logistic regression on abs(h1-h2)
+            # perform logistic regression on the vector |h1-h2|,
+            # equivalent to logistic regression on the (scalar) weighted Manhattan distance between h1 and h2,
+            # ie. weighted sum of |h1-h2|
             logistic_a = tf.get_variable("coef", [self.config.hidden_size], tf.float32, tf.contrib.layers.xavier_initializer())
             logistic_b = tf.Variable(0.0, dtype=tf.float32, name="logistic_b")
             self.regularization_term = tf.reduce_sum(tf.square(logistic_a)) + tf.square(logistic_b)
@@ -290,16 +294,24 @@ class SimilarityModel(Model):
     def predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
         feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
         predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
-        return np.round(predictions).astype(int)
+
+        if self.config.distance_measure in ["concat", "concat_steroids"]:
+            # predictions = array of size (num_examples, 2)
+            # is the input into the softmax, but we just care about comparing the two values
+            return (predictions[:, 1] > predictions[:, 0]).astype(int)
+        else:
+            # predictions = scalar output of logistic regression
+            # => we need to round to nearest int (either 0 or 1)
+            return np.round(predictions).astype(int)
 
     # evaluate model after training
     def evaluate(self, sess, examples):
         """
         Args:
             sess: a TFSession
-            examples: [ list of all sentence 1,
-                        list of all sentence 2,
-                        list of all labels ]
+            examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
         Returns:
             fraction of correct predictions
             TODO: maybe return the actual predictions as well
@@ -309,35 +321,34 @@ class SimilarityModel(Model):
         fp = 0.0
         fn = 0.0
 
-        num_examples = len(examples[0])
-
         preds = []
-        prog = Progbar(target=1+int(self.config.batch_size))
-        for i, batch in enumerate(self.stupid_minibatch(examples, self.config.batch_size)):
+        confusion_matrix = np.zeros((2,2), dtype=np.float64)
+
+        num_examples = len(examples[0])
+        num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
+        prog = Progbar(target=num_batches)
+
+        for i, batch in enumerate(self.minibatch(examples, shuffle=False)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
             preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
-
-            if self.config.distance_measure == "concat" or self.config.distance_measure == "concat_steroids":
-                preds_ = (preds_[:, 1] > preds_[:, 0]).astype(int)
-
             preds += list(preds_)
             labels_batch = np.array(labels_batch)
 
-            for i in range(preds_.shape[0]):
-                if preds_[i] == 1:
-                    if labels_batch[i] == 1:
-                        tp += 1.0
-                    else:
-                        fp += 1.0
-                else:
-                    if labels_batch[i] == 1:
-                        fn += 1.0
+            for j in range(preds_.shape[0]):
+                confusion_matrix[labels_batch[j], preds_[j]] += 1
 
-            correct_preds += (preds_ == labels_batch).sum()
+            prog.update(i+1)
 
-            prog.update(i + 1, [])
-
+        ## CONFUSION MATRIX (is indeed hella confusing)
+        #            pred -   pred +
+        # label -  |   tn   |   fp   |
+        # label +  |   fn   |   tp   |
+        tn = confusion_matrix[0,0]
+        fp = confusion_matrix[0,1]
+        fn = confusion_matrix[1,0]
+        tp = confusion_matrix[1,1]
+        correct_preds = tp + tn
         accuracy = correct_preds / num_examples
         precision = (tp)/(tp + fp) if tp > 0  else 0
         recall = (tp)/(tp + fn) if tp > 0  else 0
@@ -345,42 +356,79 @@ class SimilarityModel(Model):
         print("\ntp: %f, fp: %f, fn: %f" % (tp, fp, fn))
         f1 = 2 * precision * recall / (precision + recall) if tp > 0  else 0
 
-        return (accuracy, precision, recall, f1)
+        return (preds, accuracy, precision, recall, f1)
 
-    def stupid_minibatch(self, train_examples, batch_size):
-        sent1, sent2, labels = train_examples
+    def minibatch(self, examples, shuffle=True):
+        """
+        Args:
+            examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
+            batch_size: int
+            shuffle: bool, whether or not to shuffle the examples before creating batches
+        Yields: (sentence1_batch, sentence2_batch, labels_batch)
+            sentence1_batch: numpy array with shape (batch_size, max_length)
+            sentence2_batch: same idea as sentence1_batch
+            labels_batch: (batch_size,) numpy array of labels for the batch
+        """
+        sent1, sent2, labels = examples
         num_examples = len(sent1)
-        for i in range(int(np.ceil(num_examples / batch_size))):
+        order = np.arange(num_examples)
+        if shuffle:
+            np.random.shuffle(order)
+
+        batch_size = self.config.batch_size
+        num_batches = int(np.ceil(num_examples * 1.0 / batch_size))
+        for i in range(num_batches):
             start = i * batch_size
             end = min(i * batch_size + batch_size, num_examples)
-            yield (sent1[start:end], sent2[start:end], labels[start:end])
+            yield (sent1[order[start:end]], sent2[order[start:end]], labels[order[start:end]])
 
     def run_epoch(self, sess, train_examples, dev_set, test_set):
         """
         Args:
             sess: TFSession
-            train_examples: [ list of all sentence 1,
-                        list of all sentence 2,
-                        list of all labels ]
+            train_examples: [ numpy array (num_examples, max_length) of all sentence 1,
+                        numpy array (num_examples, max_length) of all sentence 2,
+                        numpy array (num_examples, ) of all labels ]
             dev_set: same as train_examples, except for the dev set
         Returns:
-            percentage of correct predictions on the dev set
+            avg loss across all minibatches
         """
-        prog = Progbar(target = 1 + int(len(train_examples[0]) / self.config.batch_size))
+        num_examples = len(train_examples[0])
+        num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
+        prog = Progbar(target=num_batches)
+
+        total_loss = 0.0
         
-        for i, batch in enumerate(self.stupid_minibatch(train_examples, self.config.batch_size)):
+        for i, batch in enumerate(self.minibatch(train_examples, shuffle=True)):
             sentence1_batch, sentence2_batch, labels_batch = batch
             feed = self.create_feed_dict(sentence1_batch, sentence2_batch, labels_batch, dropout=self.config.dropout)
             _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
+            total_loss += loss
             prog.update(i+1, [("train loss", loss)])
         print("")
-
-        accuracy_dev, precision_dev, recall_dev, f1_dev = self.evaluate(sess, dev_set)
-        accuracy_test, precision_test, recall_test, f1_test = self.evaluate(sess, test_set)
-        return (accuracy_dev, precision_dev, recall_dev, f1_dev), (accuracy_test, precision_test, recall_test, f1_test)
+        return total_loss / num_batches
 
     def preprocess_sequence_data(self, examples):
-        return zip(*examples)
+        """
+        Args:
+            examples: is list of tuples:
+                [ 
+                  (numpy array of sentence 1, numpy array of sentence2, int label),
+                  ...
+                ]
+        Returns: (all_sent1, all_sent2, all_labels)
+            all_sent1: numpy array of shape (num_examples, max_length)
+            all_sent2: same as all_sent1, except for the sentence2's
+            all_labels: numpy arrray of all labels, has shape (num_examples,)
+        """
+        # examples 
+        all_sent1, all_sent2, all_labels = zip(*examples)
+        all_sent1 = np.stack(all_sent1)
+        all_sent2 = np.stack(all_sent2)
+        all_labels = np.array(all_labels)
+        return (all_sent1, all_sent2, all_labels)
 
     def fit(self, sess, saver, train_examples_raw, dev_set_raw, test_set_raw):
         """
@@ -394,31 +442,52 @@ class SimilarityModel(Model):
         Returns:
             best training loss over the self.config.n_epochs of training
         """
-        best_dev_score = 0.
-        f1_for_best_dev_score = 0.
-        best_test_accuracy = 0.
-        best_test_f1 = 0.
-
         # unpack data
         train_examples = self.preprocess_sequence_data(train_examples_raw)
         dev_set = self.preprocess_sequence_data(dev_set_raw)
         test_set = self.preprocess_sequence_data(test_set_raw)
 
+        splits = {
+            "train" : train_examples,
+            "dev" : dev_set,
+            "test" : test_set
+        }
+
+        results = {}
+        for split in splits:
+            num_examples = len(splits[split][0])
+            results[split] = {
+                "preds" : np.zeros((self.config.n_epochs, num_examples)),
+                "accuracy" : np.zeros(self.config.n_epochs),
+                "precision" : np.zeros(self.config.n_epochs),
+                "recall" : np.zeros(self.config.n_epochs),
+                "f1" : np.zeros(self.config.n_epochs)
+            }
+
+        best_dev_accuracy = 0
+        best_dev_accuracy_epoch = 0
+
         for epoch in range(self.config.n_epochs):
             print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
-            dev_results, test_results = self.run_epoch(sess, train_examples, dev_set, test_set)
-            score_dev, precision_dev, recall_dev, f1_dev = dev_results
-            score_test, precision_test, recall_test, f1_test = test_results
+            self.run_epoch(sess, train_examples, dev_set, test_set)
 
-            if score_test > best_test_accuracy:
-                best_test_accuracy = score_test
-                best_test_f1 = f1_test
+            for split in splits:
+                preds, accuracy, precision, recall, f1 = self.evaluate(sess, splits[split])
+                results[split]["preds"][epoch] = preds
+                results[split]["accuracy"][epoch] = accuracy
+                results[split]["precision"][epoch] = precision
+                results[split]["recall"][epoch] = recall
+                results[split]["f1"][epoch] = f1
 
+                for score in ["accuracy", "precision", "recall", "f1"]:
+                    print("%s %s: %f" % (split, score, results[split][score][epoch]))
+                print("")
 
-            if score_dev > best_dev_score:
-                print("New best accuracy!!")
-                best_dev_score = score_dev
-                f1_for_best_dev_score = f1_dev
+            if results["dev"]["accuracy"][epoch] > best_dev_accuracy:
+                best_dev_accuracy = results["dev"]["accuracy"][epoch]
+                best_dev_accuracy_epoch = epoch
+                print("New best accuracy on dev set!!")
+
                 if saver is not None:
                     checkpoint_dir = "../saved_ckpts/"
                     if not os.path.exists(checkpoint_dir):
@@ -429,16 +498,17 @@ class SimilarityModel(Model):
                     save_path = saver.save(sess, os.path.join(checkpoint_dir, filename))
                     print("Model saved in file: %s" % save_path)
 
-            print('Dev Accuracy: %f' % score_dev)
-            print("Dev Precision: %f" % precision_dev)
-            print("Dev Recall: %f" % recall_dev)
-            print("Dev F1 Score: %f" % f1_dev)
-            print('')
+        # save results to pickle
+        results_dir = "../results/"
+        filename = "model_a_%d_c_%s_d_%s_r_%g_hs_%d_ml_%d.pkl" % (int(self.config.augment_data), self.config.cell,
+            self.config.distance_measure, self.config.regularization_constant, self.config.hidden_size, self.config.max_length)
+        save_path = os.path.join(results_dir, filename)
+        with open(save_path, 'wb') as f:
+            pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-            print('Test Accuracy: %f' % score_test)
-            print("Test Precision: %f" % precision_test)
-            print("Test Recall: %f" % recall_test)
-            print("Test F1 Score: %f" % f1_test)
+        # calculate other relevant scores
+        dev_accuracy_f1 = results["dev"]["f1"][best_dev_accuracy_epoch]
+        test_accuracy = results["test"]["accuracy"][best_dev_accuracy_epoch]
+        test_f1 = results["test"]["f1"][best_dev_accuracy_epoch]
 
-            print("")
-        return best_dev_score, f1_for_best_dev_score, best_test_accuracy, best_test_f1
+        return best_dev_accuracy, dev_accuracy_f1, test_accuracy, test_f1

@@ -14,7 +14,7 @@ Assumes the following default paths:
 The input file should be a TSV (tab-separated values) file with 6 columns:
     id      qid1    qid2    question1       question2       is_duplicate
 
-The output file will have the following format where question1 and question2 tokenized
+The output file will have the following format where question1 and question2 are tokenized
 questions with tokens separated by spaces:
     question1
     question2

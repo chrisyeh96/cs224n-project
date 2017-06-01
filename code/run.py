@@ -33,7 +33,7 @@ class Config:
     dropout = 0.5
     embed_size = 300 # word vector dimensions
     output_size = 50
-    n_epochs = 30
+    n_epochs = 1
     max_grad_norm = 10.
     lr = 0.001
     n_classes = 2

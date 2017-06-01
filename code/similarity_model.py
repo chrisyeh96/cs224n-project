@@ -313,7 +313,7 @@ class SimilarityModel(Model):
             # predictions = array of size (num_examples, 2)
             # is the input into the softmax, but we just care about comparing the two values
             exp = np.exp(predictions - np.max(predictions, axis=1)[:,np.newaxis])
-            softmax = exp / np.sum(exp, axis=1)
+            softmax = exp / np.sum(exp, axis=1)[:,np.newaxis]
             return softmax[:, 1]
             # return (predictions[:, 1] > predictions[:, 0]).astype(int)
         else:

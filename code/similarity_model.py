@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from model import Model
-from rnn_cell import RNNCell
+# from rnn_cell import RNNCell
 from gru_cell import GRUCell
 from util import Progbar, cosine_distance, norm
 import numpy as np

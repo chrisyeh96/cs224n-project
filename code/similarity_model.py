@@ -542,6 +542,8 @@ class SimilarityModel(Model):
         num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
         prog = Progbar(target=num_batches)
 
+        preds = []
+
         for i, batch in enumerate(self.minibatch(test_examples, shuffle=False)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
@@ -554,6 +556,6 @@ class SimilarityModel(Model):
         with open('../submission.csv', 'wb') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['test_id', 'is_duplicate'])
-            for i in xrange(len(preds)):
+            for i in range(len(preds)):
                 writer.writerow([str(i), preds[i]])
             print("Generated new submission.csv")

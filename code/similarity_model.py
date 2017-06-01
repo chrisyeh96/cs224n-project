@@ -305,6 +305,22 @@ class SimilarityModel(Model):
             # => we need to round to nearest int (either 0 or 1)
             return np.round(predictions).astype(int)
 
+    def test_time_predict_on_batch(self, sess, inputs_batch1, inputs_batch2):
+        feed = self.create_feed_dict(inputs_batch1, inputs_batch2)
+        predictions = sess.run(self.pred, feed_dict=feed) # should return a list of 0s and 1s
+
+        if self.config.distance_measure in ["concat", "concat_steroids"]:
+            # predictions = array of size (num_examples, 2)
+            # is the input into the softmax, but we just care about comparing the two values
+            exp = np.exp(predictions - np.max(predictions, axis=1))
+            softmax = exp / np.sum(exp, axis=1)
+            return softmax[:, 1]
+            # return (predictions[:, 1] > predictions[:, 0]).astype(int)
+        else:
+            # predictions = scalar output of logistic regression
+            # => we need to round to nearest int (either 0 or 1)
+            return np.round(predictions).astype(int)
+
     # evaluate model after training
     def evaluate(self, sess, examples):
         """
@@ -547,7 +563,7 @@ class SimilarityModel(Model):
         for i, batch in enumerate(self.minibatch(test_examples, shuffle=False)):
             # Ignore labels
             sentence1_batch, sentence2_batch, labels_batch = batch
-            preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
+            preds_ = self.test_time_predict_on_batch(sess, sentence1_batch, sentence2_batch)
             preds += list(preds_)
 
             prog.update(i+1)

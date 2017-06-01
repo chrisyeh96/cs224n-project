@@ -336,24 +336,24 @@ if __name__ == "__main__":
             # best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
             # print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
 
-    with open("../results/model_results.csv", 'a') as f:
-        fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", \
-            "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+    # with open("../results/model_results.csv", 'a') as f:
+    #     fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", \
+    #         "max_length", "best_dev_accuracy", "dev_f1", "test_accuracy", "test_f1"]
+    #     writer = csv.DictWriter(f, fieldnames=fieldnames)
         
-        hyperparams_and_results_dict = {
-            "cell": config.cell,
-            "distance_measure": config.distance_measure,
-            "augment_data": config.augment_data,
-            "regularization_constant": config.regularization_constant,
-            "hidden_size": config.hidden_size,
-            "max_length": config.max_length,
-            "best_dev_accuracy": best_dev_accuracy,
-            "dev_f1": dev_f1,
-            "test_accuracy": test_accuracy,
-            "test_f1": test_f1
-        }
-        writer.writerow(hyperparams_and_results_dict)
+    #     hyperparams_and_results_dict = {
+    #         "cell": config.cell,
+    #         "distance_measure": config.distance_measure,
+    #         "augment_data": config.augment_data,
+    #         "regularization_constant": config.regularization_constant,
+    #         "hidden_size": config.hidden_size,
+    #         "max_length": config.max_length,
+    #         "best_dev_accuracy": best_dev_accuracy,
+    #         "dev_f1": dev_f1,
+    #         "test_accuracy": test_accuracy,
+    #         "test_f1": test_f1
+    #     }
+    #     writer.writerow(hyperparams_and_results_dict)
 
 
 

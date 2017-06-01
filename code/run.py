@@ -8,6 +8,8 @@ import argparse
 import csv
 
 DATA_PATH = "../data/quora/tokenized_data.tsv"
+TRAIN_PATH = "../data/kaggle/train_tokenized.tsv"
+TEST_PATH = "../data/kaggle/train_tokenized.tsv"
 DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
 # DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices_ibm.npz"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"
@@ -108,6 +110,29 @@ def load_and_preprocess_data(data_path, data_split_indices_path, tokens_to_glove
         helper.augment_data(train_data)
 
     return helper, train_data, dev_data, test_data
+
+def test_time_load_and_preprocess_data(train_path, test_path, tokens_to_gloveID_path, max_length, augment_data=False):
+    print("Loading all data...")
+    with open(train_path, 'r') as train_file:
+        train_data = read_datafile(train_file)
+    print("Training done. Read %d sentences" % len(train_data))
+
+    with open(test_path, 'r') as test_file:
+        test_data = read_datafile(test_file)
+    print("Testing done. Read %d sentences" % len(test_data))
+
+    # now process all the input data: turn words into the glove indices
+    print("Converting words into glove vector indices...")
+    helper = ModelHelper.load(tokens_to_gloveID_path, max_length)
+    train_data_vectorized = helper.vectorize(train_data)
+    test_data_vectorized = helper.vectorize(test_data)
+
+    if augment_data:
+        print("Augmenting data...")
+        helper.augment_data(train_data_vectorized)
+
+    return helper, train_data_vectorized, test_data_vectorized
+
 
 class ModelHelper(object):
     """
@@ -273,7 +298,8 @@ if __name__ == "__main__":
 
 
     print("Preparing data...")
-    helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
+    # helper, train, dev, test = load_and_preprocess_data(DATA_PATH, DATA_SPLIT_INDICES_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
+    helper, train, test = test_time_load_and_preprocess_data(TRAIN_PATH, TEST_PATH, TOKENS_TO_GLOVEID_PATH, config.max_length, config.augment_data)
 
     print("Load embeddings...")
     embeddings = np.load(GLOVE_VECTORS_PATH, mmap_mode='r')
@@ -303,8 +329,11 @@ if __name__ == "__main__":
         with tf.Session(config=sess_config) as session:
             session.run(init)
 
-            best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
-            print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
+            model.test_time_fit(session, saver, train)
+            model.test_time_predict(session, test)
+
+            # best_dev_accuracy, dev_f1, test_accuracy, test_f1 = model.fit(session, saver, train, dev, test)
+            # print("best dev accuracy: %f, dev f1: %f, test accuracy: %f, test f1: %f" % (best_dev_accuracy, dev_f1, test_accuracy, test_f1))
 
     with open("../results/model_results.csv", 'a') as f:
         fieldnames = ["cell", "distance_measure", "augment_data", "regularization_constant", "hidden_size", \

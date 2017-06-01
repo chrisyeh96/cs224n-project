@@ -9,7 +9,7 @@ import csv
 
 DATA_PATH = "../data/quora/tokenized_data.tsv"
 TRAIN_PATH = "../data/kaggle/train_tokenized.tsv"
-TEST_PATH = "../data/kaggle/train_tokenized.tsv"
+TEST_PATH = "../data/kaggle/test_tokenized.tsv"
 DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices.npz"
 # DATA_SPLIT_INDICES_PATH = "../data/quora/data_split_indices_ibm.npz"
 GLOVE_VECTORS_PATH = "../data/glove/glove.6B.300d.npy"

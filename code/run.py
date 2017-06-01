@@ -316,7 +316,8 @@ if __name__ == "__main__":
 
         print_options(args, config)
 
-        init = tf.global_variables_initializer()
+        # init = tf.global_variables_initializer()
+        init = tf.initialize_all_variables()
         saver = None
         if config.save_params:
             saver = tf.train.Saver()

@@ -553,7 +553,7 @@ class SimilarityModel(Model):
         # here we have a list of predictions
         with open('../submission.csv', 'wb') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['id', 'is_duplicate'])
+            writer.writerow(['test_id', 'is_duplicate'])
             for i in xrange(len(preds)):
                 writer.writerow([str(i), preds[i]])
             print("Generated new submission.csv")

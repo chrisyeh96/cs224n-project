@@ -9,6 +9,7 @@ import numpy as np
 import os
 import pdb
 import pickle
+import csv
 
 class SimilarityModel(Model):
     def __init__(self, helper, config, embeddings, report=None):
@@ -512,3 +513,47 @@ class SimilarityModel(Model):
         test_f1 = results["test"]["f1"][best_dev_accuracy_epoch]
 
         return best_dev_accuracy, dev_accuracy_f1, test_accuracy, test_f1
+
+    def test_time_fit(self, sess, saver, train_examples_raw):
+        """
+        Args:
+            sess: TFSession
+            saver: tf.train.Saver, used to saves all variables after finding best model
+                set to None if you do not want to save the variables
+            train_examples_raw: list of training examples, each example is a
+                tuple (s1, s2, label) where s1,s2 are padded/truncated sentences
+            dev_set_raw: same as train_examples_raw, except for the dev set
+        Returns:
+            best training loss over the self.config.n_epochs of training
+        """
+        # unpack data
+        train_examples = self.preprocess_sequence_data(train_examples_raw)
+
+        for epoch in range(self.config.n_epochs):
+            print("Epoch %d out of %d" % (epoch + 1, self.config.n_epochs))
+            loss = self.run_epoch(sess, train_examples, None, None)
+
+        return loss
+
+    def test_time_predict(self, sess, test_examples_raw):
+        test_examples = self.preprocess_sequence_data(test_examples_raw)
+
+        num_examples = len(test_examples[0])
+        num_batches = int(np.ceil(num_examples * 1.0 / self.config.batch_size))
+        prog = Progbar(target=num_batches)
+
+        for i, batch in enumerate(self.minibatch(test_examples, shuffle=False)):
+            # Ignore labels
+            sentence1_batch, sentence2_batch, labels_batch = batch
+            preds_ = self.predict_on_batch(sess, sentence1_batch, sentence2_batch)
+            preds += list(preds_)
+
+            prog.update(i+1)
+
+        # here we have a list of predictions
+        with open('../submission.csv', 'wb') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['id', 'is_duplicate'])
+            for i in xrange(len(preds)):
+                writer.writerow([str(i), preds[i]])
+            print("Generated new submission.csv")
